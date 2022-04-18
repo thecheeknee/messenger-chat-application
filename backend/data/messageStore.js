@@ -53,5 +53,6 @@ module.exports = Object.freeze({
   msgSuccess: {
     presetSaved: 'preset_saved',
     presetList: 'preset_data',
+    presetDel: 'preset_deleted',
   },
 });

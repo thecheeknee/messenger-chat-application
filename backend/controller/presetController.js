@@ -68,3 +68,29 @@ module.exports.savePreset = async (req, res) => {
     });
   }
 };
+
+module.exports.deletePreset = async (req, res) => {
+  try {
+    const { tag } = req.body;
+    if (!tag || tag === '') {
+      throw data.msgErrors.presetInvalid;
+    }
+    const delTag = await presetModel.findOneAndDelete({
+      tag: tag,
+    });
+
+    if (delTag) {
+      res.status(200).json({
+        success: true,
+        message: data.msgSuccess.presetDel,
+      });
+    } else throw data.msgErrors.presetNotFound;
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
+    });
+  }
+};
