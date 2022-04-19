@@ -10,9 +10,12 @@ const {
   userDelete,
   custCreate,
   custAlert,
+  custVerify,
   custDelete,
+  custTerminate,
   userToken,
 } = require('../controller/authController');
+const { addChat, endChat } = require('../controller/chatController');
 const {
   authMiddleware,
   authAdminCheck,
@@ -27,7 +30,9 @@ router.post('/user-change-password', authMiddleware, userChangePassword);
 router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
 router.post('/cust-alert', authMiddleware, custAlert);
-router.post('/cust-delete', authMiddleware, custDelete);
+router.post('/cust-verify', authMiddleware, custVerify, addChat);
+router.post('/cust-end-chat', authMiddleware, custDelete, endChat);
+router.post('/cust-terminate', authMiddleware, custTerminate, endChat);
 router.post('/token', authMiddleware, userToken);
 
 module.exports = router;

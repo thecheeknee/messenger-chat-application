@@ -11,6 +11,18 @@ module.exports = Object.freeze({
     deleted: 'deleted',
   },
 
+  chat: {
+    started: 'started',
+    ended: 'ended',
+    startFailed: 'start_failed',
+    endFailed: 'end_failed',
+  },
+
+  resolution: {
+    byCustomer: 'chat ended by customer',
+    byAgent: 'chat ended by agent',
+  },
+
   common: {
     notFound: 'not_found',
     serverError: 'internal_server_error',

@@ -3,11 +3,11 @@ const { model, Schema } = require('mongoose');
 const chatSchema = new Schema(
   {
     agent: {
-      type: String,
+      type: Object,
       required: true,
     },
     customer: {
-      type: String,
+      type: Object,
       required: true,
     },
     status: {
@@ -23,6 +23,10 @@ const chatSchema = new Schema(
       required: true,
     },
     endTime: {
+      type: String,
+      required: true,
+    },
+    chatEndedBy: {
       type: String,
       required: true,
     },

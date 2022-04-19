@@ -260,34 +260,17 @@ module.exports.userLogout = (req, res) => {
 };
 
 module.exports.userVerify = async (req, res) => {
-  // if admin, will verify all IDs passed under verifyList (for agent verification)
-  // customer will be verified once chat is accepted
+  // to verify agents by admin
   const { verifyList } = req.body;
   try {
-    if (req.myId) {
-      //user token exists.
-      if (req.type === uTypes.admin) {
-        // verify all IDs under verifyList
-        verifyList.forEach(async (element) => {
-          await userAuthModel.findOneAndUpdate(
-            {
-              userName: element.userName,
-              email: element.email,
-              type: uTypes.agent,
-            },
-            {
-              verified: true,
-              status: uStatus.active,
-            },
-            {
-              new: true,
-            }
-          );
-        });
-      } else if (req.type === uTypes.agent) {
+    if (req.myId && req.type === uTypes.admin) {
+      // verify all IDs under verifyList
+      verifyList.forEach(async (element) => {
         await userAuthModel.findOneAndUpdate(
           {
-            _id: verifyList[0].custId,
+            userName: element.userName,
+            email: element.email,
+            type: uTypes.agent,
           },
           {
             verified: true,
@@ -297,13 +280,13 @@ module.exports.userVerify = async (req, res) => {
             new: true,
           }
         );
-      }
+      });
       res.status(200).json({
         success: true,
         message: data.authSuccess.userVerified,
         detail: verifyList,
       });
-    }
+    } else throw data.authErrors.adminMissing;
   } catch (err) {
     res.status(400).json({
       error: {
@@ -621,6 +604,55 @@ module.exports.custAlert = async (req, res) => {
   }
 };
 
+module.exports.custVerify = async (req, res, next) => {
+  try {
+    // verify customer by agent and start chat
+    userAuthModel.findOne(
+      {
+        _id: req.myId,
+        type: uTypes.agent,
+      },
+      (err, agentCheck) => {
+        if (err) throw err;
+        const { custId, custUserName } = req.body;
+        userAuthModel.findOneAndUpdate(
+          {
+            _id: custId,
+            userName: custUserName,
+            status: uStatus.created,
+          },
+          {
+            status: uStatus.active,
+            verified: true,
+          },
+          {
+            new: true,
+          },
+          (error, custUpdate) => {
+            if (error) throw error;
+            req.body = {
+              agentId: agentCheck._id,
+              agentName: agentCheck.userName,
+              custId: custUpdate._id,
+              custUserName: custUpdate.userName,
+              status: custUpdate.status,
+              verified: custUpdate.verified,
+            };
+            next();
+          }
+        );
+      }
+    );
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.authErrors.invalidType,
+        detail: err,
+      },
+    });
+  }
+};
+
 module.exports.userToken = async (req, res) => {
   // keep checking if user is present in the system, else delete token.
   // To be run every 60 seconds to force session to terminate if chat has ended.
@@ -698,8 +730,8 @@ module.exports.userToken = async (req, res) => {
   }
 };
 
-module.exports.custTerminate = async (req, res) => {
-  // set customer status to deleted by agent - in case of invalid chat
+module.exports.custTerminate = async (req, res, next) => {
+  // agent sets customer status to delete and end chat
   try {
     const checkAgent = await userAuthModel.findOne({
       _id: req.myId,
@@ -707,7 +739,7 @@ module.exports.custTerminate = async (req, res) => {
     });
 
     if (checkAgent) {
-      const { custId, custUserName } = req.body;
+      const { custId, custUserName, resolution } = req.body;
       userAuthModel.findOneAndUpdate(
         {
           _id: custId,
@@ -723,11 +755,16 @@ module.exports.custTerminate = async (req, res) => {
         },
         (err, custStatus) => {
           if (err) throw err;
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.userDeleted,
-            detail: custStatus,
-          });
+          else {
+            req.body = {
+              agentId: checkAgent._id,
+              agentName: checkAgent.userName,
+              custId: custStatus._id,
+              custUserName: custStatus.userName,
+              resolution,
+            };
+            next();
+          }
         }
       );
     } else throw data.authErrors.invalidType;
@@ -741,8 +778,8 @@ module.exports.custTerminate = async (req, res) => {
   }
 };
 
-module.exports.custDelete = async (req, res) => {
-  //delete customerID generated after chat has ended - customer front end.
+module.exports.custDelete = async (req, res, next) => {
+  // end chat if customer ends chat - update customer status to deleted and next
   const error = [];
   try {
     userAuthModel.findOneAndUpdate(
@@ -757,14 +794,15 @@ module.exports.custDelete = async (req, res) => {
       {
         new: true,
       },
-      (err, checkUser) => {
+      (err, custStatus) => {
         if (err) throw data.authErrors.userNotFound;
-        console.log(checkUser);
-        res.status(200).cookie('authToken', '').json({
-          success: true,
-          message: data.authSuccess.custDeleted,
-          detail: data.authSuccess.tokenDeleted,
-        });
+        req.body = {
+          custId: custStatus._id,
+          custUserName: custStatus.userName,
+          status: custStatus.status,
+          verified: custStatus.verified,
+        };
+        next();
       }
     );
   } catch (err) {
