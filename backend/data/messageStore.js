@@ -42,6 +42,11 @@ module.exports = Object.freeze({
     userVerified: 'user_verified',
   },
 
+  chatAlerts: {
+    chatWaiting: 'incoming_chat',
+    chatDeclined: 'chat_declined',
+  },
+
   msgErrors: {
     presetNotFound: 'preset_not_found',
     presetPresent: 'preset_present',

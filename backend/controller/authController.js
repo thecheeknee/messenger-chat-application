@@ -13,6 +13,10 @@ module.exports.userRegister = async (req, res) => {
   const { userName, name, email, type, password, confirmPassword } = req.body;
   const error = [];
 
+  if (!type || type === uTypes.customer) {
+    throw data.authErrors.invalidType;
+  }
+
   if (!userName || userName.length < 6 || userName.indexOf(' ') !== -1) {
     error.push(data.authErrors.invalidUName);
   }
@@ -31,10 +35,6 @@ module.exports.userRegister = async (req, res) => {
     (password !== confirmPassword && password.length < 6)
   ) {
     error.push(data.authErrors.invalidPassword);
-  }
-
-  if (!type || type === uTypes.customer) {
-    error.push(data.authErrors.invalidType);
   }
 
   if (error.length > 0) {
@@ -66,60 +66,64 @@ module.exports.userRegister = async (req, res) => {
           },
         });
       } else {
-        const userCreate = await userAuthModel.create({
-          userName,
-          email,
-          name,
-          uType: type,
-          password: await bcrypt.hash(password, 10),
-          verified: type === uTypes.admin ? true : false,
-          status: type === uTypes.admin ? uStatus.active : uStatus.created,
-        });
+        userAuthModel.create(
+          {
+            userName,
+            email,
+            name,
+            uType: type,
+            password: await bcrypt.hash(password, 10),
+            verified: type === uTypes.admin ? true : false,
+            status: type === uTypes.admin ? uStatus.active : uStatus.created,
+          },
+          (err, userCreate) => {
+            if (err) throw err;
+            if (userCreate.uType === uTypes.admin) {
+              const token = jwt.sign(
+                {
+                  id: userCreate._id,
+                  userName: userCreate.userName,
+                  name: userCreate.name,
+                  type: userCreate.uType,
+                  verified: userCreate.verified,
+                  status: userCreate.status,
+                  verifiedAdmin: true,
+                  registerTime: userCreate.createdAt,
+                },
+                process.env.SECRET,
+                {
+                  expiresIn: process.env.TOKEN_EXP,
+                }
+              );
 
-        if (userCreate.uType === uTypes.admin) {
-          const token = jwt.sign(
-            {
-              id: userCreate._id,
-              userName: userCreate.userName,
-              name: userCreate.name,
-              type: userCreate.uType,
-              verified: userCreate.verified,
-              status: userCreate.status,
-              verifiedAdmin: true,
-              registerTime: userCreate.createdAt,
-            },
-            process.env.SECRET,
-            {
-              expiresIn: process.env.TOKEN_EXP,
+              const options = {
+                expires: new Date(
+                  Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
+                ),
+              };
+
+              res
+                .status(201)
+                .cookie('authToken', token, options)
+                .json({
+                  success: true,
+                  message: data.authSuccess.userAdded,
+                  detail: {
+                    userId: userCreate._id,
+                    registerTime: userCreate.createdAt,
+                  },
+                  token,
+                });
+            } else {
+              res.status(200).json({
+                success: true,
+                message: data.authSuccess.userAdded,
+                detail: userCreate.userName,
+                description: 'user created. verification pending',
+              });
             }
-          );
-
-          const options = {
-            expires: new Date(
-              Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
-            ),
-          };
-
-          res
-            .status(201)
-            .cookie('authToken', token, options)
-            .json({
-              success: true,
-              message: data.authSuccess.userAdded,
-              detail: {
-                userId: userCreate._id,
-                registerTime: userCreate.createdAt,
-              },
-              token,
-            });
-        } else {
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.userAdded,
-            detail: userCreate.userName,
-            description: 'user created. please login',
-          });
-        }
+          }
+        );
       }
     } catch (err) {
       res.status(500).json({
@@ -283,7 +287,7 @@ module.exports.userVerify = async (req, res) => {
       } else if (req.type === uTypes.agent) {
         await userAuthModel.findOneAndUpdate(
           {
-            _id: verifyList[0],
+            _id: verifyList[0].custId,
           },
           {
             verified: true,
@@ -316,27 +320,23 @@ module.exports.userList = async (req, res) => {
     if (req.myId && req.type === uTypes.admin) {
       const { verified, status } = req.body;
       // find agents who are 'created' (new + unverified), 'active' (current + verified) or 'deleted' (old + unverified)
-      const listAgents = await userAuthModel.find({
-        uType: uTypes.agent,
-        verified: verified,
-        status: status,
-      });
-
-      if (listAgents && listAgents.length > 0) {
-        res.status(200).json({
-          success: true,
-          detail: {
-            listAgents,
-            count: listAgents.length,
-          },
-        });
-      } else {
-        res.status(400).json({
-          error: {
-            code: data.authErrors.userNotFound,
-          },
-        });
-      }
+      userAuthModel.find(
+        {
+          uType: uTypes.agent,
+          verified: verified,
+          status: status,
+        },
+        (err, listAgents) => {
+          if (err) throw data.authErrors.userNotFound;
+          res.status(200).json({
+            success: true,
+            detail: {
+              listAgents,
+              count: listAgents.length,
+            },
+          });
+        }
+      );
     } else {
       res.status(400).json({
         error: {
@@ -391,7 +391,7 @@ module.exports.userChangePassword = async (req, res) => {
           throw data.authErrors.incorrectPassword;
         }
 
-        const updateUser = await userAuthModel.findOneAndUpdate(
+        userAuthModel.findOneAndUpdate(
           {
             _id: checkUser._id,
             email: checkUser.email,
@@ -402,16 +402,16 @@ module.exports.userChangePassword = async (req, res) => {
           },
           {
             new: true,
+          },
+          (err, updateUser) => {
+            if (err) throw data.authErrors.updateFailed;
+            res.status(200).json({
+              success: true,
+              message: data.authSuccess.passwordUpdated,
+              detail: updateUser,
+            });
           }
         );
-
-        if (updateUser) {
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.passwordUpdated,
-            detail: updateUser,
-          });
-        } else throw data.authErrors.updateFailed;
       } else {
         throw data.authErrors.userNotFound;
       }
@@ -442,7 +442,7 @@ module.exports.userDelete = async (req, res) => {
 
       if (matchPassword && req.type === uTypes.admin) {
         //admin confirmed. Unverify user if type == agent
-        const delUser = await userAuthModel.findOneAndUpdate(
+        userAuthModel.findOneAndUpdate(
           {
             userName: agentUName,
             email: agentEmail,
@@ -453,21 +453,16 @@ module.exports.userDelete = async (req, res) => {
           },
           {
             new: true,
+          },
+          (err, delUser) => {
+            if (err) throw data.authErrors.deleteFailed;
+            res.status(200).json({
+              success: true,
+              message: data.authSuccess.userDeleted,
+              detail: delUser,
+            });
           }
         );
-
-        if (delUser) {
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.userDeleted,
-          });
-        } else {
-          res.status(400).json({
-            error: {
-              code: data.authErrors.deleteFailed,
-            },
-          });
-        }
       } else {
         res.status(400).json({
           error: {
@@ -526,43 +521,94 @@ module.exports.custCreate = async (req, res) => {
 
     const uType = uTypes.customer;
 
-    const custCreate = await userAuthModel.create({
-      userName,
-      name,
-      email,
-      uType,
-      password: await bcrypt.hash(password, 10),
-      verified: false,
-      status: uStatus.created,
+    userAuthModel.create(
+      {
+        userName,
+        name,
+        email,
+        uType,
+        password: await bcrypt.hash(password, 10),
+        verified: false,
+        status: uStatus.created,
+      },
+      (err, custCreate) => {
+        if (err) throw err;
+        const token = jwt.sign(
+          {
+            id: custCreate._id,
+            userName: custCreate.userName,
+            name: custCreate.name,
+            type: custCreate.uType,
+            verified: custCreate.verified,
+            status: custCreate.status,
+            registerTime: custCreate.createdAt,
+          },
+          process.env.SECRET,
+          {
+            expiresIn: process.env.TOKEN_EXP,
+          }
+        );
+
+        const options = {
+          expires: new Date(
+            Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
+          ),
+        };
+
+        res.status(201).cookie('authToken', token, options).json({
+          success: true,
+          message: data.authSuccess.userAdded,
+          token,
+        });
+      }
+    );
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
     });
+  }
+};
 
-    if (custCreate) {
-      const token = jwt.sign(
-        {
-          id: custCreate._id,
-          userName: custCreate.userName,
-          name: custCreate.name,
-          type: custCreate.uType,
-          verified: custCreate.verified,
-          status: custCreate.status,
-          registerTime: custCreate.createdAt,
+module.exports.custAlert = async (req, res) => {
+  // to be run from agent end (based on availability) every 30 seconds. It will keep checking if there are new customers added in the system
+  // frontend will check if agent has any slot available
+  try {
+    if (req.type === uTypes.agent) {
+      const checkAgent = await userAuthModel.findById(req.myId);
+      if (checkAgent) {
+        userAuthModel.find(
+          {
+            uType: uTypes.customer,
+            status: uStatus.created,
+          },
+          (err, checkCust) => {
+            if (err) throw data.chatAlerts.noChats;
+
+            let verifyList = checkCust.map((cust) => ({
+              custId: cust._id,
+              custUserName: cust.userName,
+            }));
+            res.status(200).json({
+              success: true,
+              message: data.chatAlerts.chatWaiting,
+              detail: {
+                verifyList,
+              },
+            });
+          }
+        );
+      } else {
+        throw data.authErrors.invalidUName;
+      }
+    } else {
+      res.status(404).json({
+        error: {
+          code: data.common.notFound,
+          detail: data.authErrors.invalidType,
         },
-        process.env.SECRET,
-        {
-          expiresIn: process.env.TOKEN_EXP,
-        }
-      );
-
-      const options = {
-        expires: new Date(
-          Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
-        ),
-      };
-
-      res.status(201).cookie('authToken', token, options).json({
-        success: true,
-        message: data.authSuccess.userAdded,
-        token,
       });
     }
   } catch (err) {
@@ -652,19 +698,57 @@ module.exports.userToken = async (req, res) => {
   }
 };
 
+module.exports.custTerminate = async (req, res) => {
+  // set customer status to deleted by agent - in case of invalid chat
+  try {
+    const checkAgent = await userAuthModel.findOne({
+      _id: req.myId,
+      uType: uTypes.agent,
+    });
+
+    if (checkAgent) {
+      const { custId, custUserName } = req.body;
+      userAuthModel.findOneAndUpdate(
+        {
+          _id: custId,
+          uType: uTypes.customer,
+          userName: custUserName,
+        },
+        {
+          verified: false,
+          status: uStatus.deleted,
+        },
+        {
+          new: true,
+        },
+        (err, custStatus) => {
+          if (err) throw err;
+          res.status(200).json({
+            success: true,
+            message: data.authSuccess.userDeleted,
+            detail: custStatus,
+          });
+        }
+      );
+    } else throw data.authErrors.invalidType;
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        message: err,
+      },
+    });
+  }
+};
+
 module.exports.custDelete = async (req, res) => {
-  //delete customerID generated after chat has ended
+  //delete customerID generated after chat has ended - customer front end.
   const error = [];
   try {
-    console.log({
-      id: req.myId,
-      v: req.verified,
-      s: req.status,
-    });
-    const checkUser = await userAuthModel.findOneAndUpdate(
+    userAuthModel.findOneAndUpdate(
       {
         _id: req.myId,
-        type: req.type,
+        uType: req.type,
       },
       {
         verified: false,
@@ -672,19 +756,17 @@ module.exports.custDelete = async (req, res) => {
       },
       {
         new: true,
+      },
+      (err, checkUser) => {
+        if (err) throw data.authErrors.userNotFound;
+        console.log(checkUser);
+        res.status(200).cookie('authToken', '').json({
+          success: true,
+          message: data.authSuccess.custDeleted,
+          detail: data.authSuccess.tokenDeleted,
+        });
       }
     );
-
-    if (checkUser) {
-      console.log(checkUser);
-      res.status(200).cookie('authToken', '').json({
-        success: true,
-        message: data.authSuccess.custDeleted,
-        detail: data.authSuccess.tokenDeleted,
-      });
-    } else {
-      error.push(data.authErrors.userNotFound);
-    }
   } catch (err) {
     error.push(err);
   }

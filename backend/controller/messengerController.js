@@ -1,5 +1,6 @@
 const User = require('../models/authModel');
 const messageModel = require('../models/messageModel');
+const data = require('../data/messageStore');
 const formidable = require('formidable');
 const fs = require('fs');
 
@@ -51,6 +52,8 @@ module.exports.getFriends = async (req, res) => {
       _id: {
         $ne: myId,
       },
+      uType: data.types.customer,
+      status: data.status.active,
     });
     for (let i = 0; i < friendGet.length; i++) {
       let lmsg = await getLastMessage(myId, friendGet[i].id);

@@ -9,6 +9,7 @@ const {
   userChangePassword,
   userDelete,
   custCreate,
+  custAlert,
   custDelete,
   userToken,
 } = require('../controller/authController');
@@ -25,6 +26,7 @@ router.post('/user-verify', authMiddleware, userVerify);
 router.post('/user-change-password', authMiddleware, userChangePassword);
 router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
+router.post('/cust-alert', authMiddleware, custAlert);
 router.post('/cust-delete', authMiddleware, custDelete);
 router.post('/token', authMiddleware, userToken);
 
