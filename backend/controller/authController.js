@@ -607,42 +607,38 @@ module.exports.custAlert = async (req, res) => {
 module.exports.custVerify = async (req, res, next) => {
   try {
     // verify customer by agent and start chat
-    userAuthModel.findOne(
-      {
-        _id: req.myId,
-        type: uTypes.agent,
-      },
-      (err, agentCheck) => {
-        if (err) throw err;
-        const { custId, custUserName } = req.body;
-        userAuthModel.findOneAndUpdate(
-          {
-            _id: custId,
-            userName: custUserName,
-            status: uStatus.created,
-          },
-          {
-            status: uStatus.active,
-            verified: true,
-          },
-          {
-            new: true,
-          },
-          (error, custUpdate) => {
-            if (error) throw error;
-            req.body = {
-              agentId: agentCheck._id,
-              agentName: agentCheck.userName,
-              custId: custUpdate._id,
-              custUserName: custUpdate.userName,
-              status: custUpdate.status,
-              verified: custUpdate.verified,
-            };
-            next();
-          }
-        );
-      }
-    );
+    const agentCheck = await userAuthModel.findOne({
+      _id: req.myId,
+      uType: uTypes.agent,
+    });
+
+    if (agentCheck) {
+      const { custId } = req.body;
+      console.log(custId);
+      const custUpdate = await userAuthModel.findOneAndUpdate({
+        _id: custId,
+        uType: uTypes.customer,
+      }, {
+        verified: true,
+        status: uStatus.active,
+      }, {
+        new: true,
+      });
+      if (custUpdate) {
+        console.log('cust-updated');
+        req.body = {
+          agentId: agentCheck._id,
+          agentName: agentCheck.userName,
+          custId: custUpdate._id,
+          custUserName: custUpdate.userName,
+          status: custUpdate.status,
+          verified: custUpdate.verified,
+        };
+        next();
+      } else throw data.authErrors.verifyFailed;
+    } else {
+      throw data.authErrors.invalidType;
+    }
   } catch (err) {
     res.status(400).json({
       error: {
@@ -802,6 +798,7 @@ module.exports.custDelete = async (req, res, next) => {
           status: custStatus.status,
           verified: custStatus.verified,
         };
+        console.log(req.body);
         next();
       }
     );

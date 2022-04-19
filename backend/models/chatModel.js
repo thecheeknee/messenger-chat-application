@@ -2,12 +2,20 @@ const { model, Schema } = require('mongoose');
 
 const chatSchema = new Schema(
   {
-    agent: {
-      type: Object,
+    agentId: {
+      type: String,
       required: true,
     },
-    customer: {
-      type: Object,
+    agentName: {
+      type: String,
+      required: true,
+    },
+    customerId: {
+      type: String,
+      required: true,
+    },
+    customerName: {
+      type: String,
       required: true,
     },
     status: {
@@ -16,7 +24,7 @@ const chatSchema = new Schema(
     },
     resolution: {
       type: String,
-      required: true,
+      required: false,
     },
     startTime: {
       type: String,
@@ -24,11 +32,11 @@ const chatSchema = new Schema(
     },
     endTime: {
       type: String,
-      required: true,
+      required: false,
     },
     chatEndedBy: {
       type: String,
-      required: true,
+      required: false,
     },
   },
   { timestamps: true }

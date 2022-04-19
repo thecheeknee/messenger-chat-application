@@ -15,7 +15,10 @@ const {
   custTerminate,
   userToken,
 } = require('../controller/authController');
-const { addChat, endChat } = require('../controller/chatController');
+const {
+  addChat,
+  endChat,
+} = require('../controller/chatController');
 const {
   authMiddleware,
   authAdminCheck,

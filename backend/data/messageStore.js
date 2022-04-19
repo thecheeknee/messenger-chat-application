@@ -15,7 +15,9 @@ module.exports = Object.freeze({
     started: 'started',
     ended: 'ended',
     startFailed: 'start_failed',
+    chatPresent: 'chat_present',
     endFailed: 'end_failed',
+    resolutionMissing: 'resolution_missing',
   },
 
   resolution: {
