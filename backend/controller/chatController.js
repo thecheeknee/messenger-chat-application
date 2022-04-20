@@ -92,3 +92,30 @@ module.exports.endChat = async (req, res) => {
     });
   }
 };
+
+module.exports.listChat = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const findChats = await chatModel.find({
+      agentId: req.myId,
+      status: status,
+    }).limit(10);
+
+    if (findChats && findChats.length > 0) {
+      res.status(200).json({
+        success: true,
+        message: data.chat.foundChats,
+        detail: findChats
+      });
+    } else {
+      throw data.chat.notFound;
+    }
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      }
+    })
+  }
+}
