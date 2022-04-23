@@ -10,6 +10,14 @@ const presetSchema = new Schema(
       type: String,
       required: true,
     },
+    responseType: {
+      type: String,
+      required: true,
+    },
+    expectedResponse: {
+      type: Object,
+      required: false,
+    },
   },
   { timestamps: true }
 );

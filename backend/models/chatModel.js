@@ -26,6 +26,10 @@ const chatSchema = new Schema(
       type: String,
       required: false,
     },
+    rating: {
+      type: Number,
+      required: false,
+    },
     startTime: {
       type: String,
       required: true,
@@ -37,6 +41,7 @@ const chatSchema = new Schema(
     chatEndedBy: {
       type: String,
       required: false,
+      default: 'agent',
     },
   },
   { timestamps: true }

@@ -4,7 +4,8 @@ const app = express();
 const dotenv = require('dotenv');
 
 const databaseConnect = require('./config/database');
-const authRouter = require('./routes/authRoute');
+const authRoute = require('./routes/authRoute');
+const chatRoute = require('./routes/chatRoute');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const presetRoute = require('./routes/presetRoute');
@@ -16,7 +17,8 @@ dotenv.config({
 
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use('/api/messenger', authRouter);
+app.use('/api/messenger', authRoute);
+app.use('/api/messenger', chatRoute);
 app.use('/api/messenger', presetRoute);
 app.use('/api/messenger', messengerRoute);
 

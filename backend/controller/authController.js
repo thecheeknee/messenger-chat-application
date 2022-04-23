@@ -477,6 +477,10 @@ module.exports.custCreate = async (req, res) => {
   const errors = [];
 
   try {
+    const { authToken } = req.cookies;
+    // check if token is already present in the system
+    if (authToken) throw data.authErrors.userExists;
+
     if (!name || /\d/.test(name)) {
       errors.push(data.authErrors.invalidName);
     }
@@ -488,7 +492,7 @@ module.exports.custCreate = async (req, res) => {
     if (errors.length > 0) throw errors;
 
     const userName =
-      name +
+      name.replace(/\s+/g, '') +
       pincode +
       chars[Math.floor(Math.random() * 26)] +
       Math.random().toString(36).substring(2, 8);
@@ -614,18 +618,20 @@ module.exports.custVerify = async (req, res, next) => {
 
     if (agentCheck) {
       const { custId } = req.body;
-      console.log(custId);
-      const custUpdate = await userAuthModel.findOneAndUpdate({
-        _id: custId,
-        uType: uTypes.customer,
-      }, {
-        verified: true,
-        status: uStatus.active,
-      }, {
-        new: true,
-      });
+      const custUpdate = await userAuthModel.findOneAndUpdate(
+        {
+          _id: custId,
+          uType: uTypes.customer,
+        },
+        {
+          verified: true,
+          status: uStatus.active,
+        },
+        {
+          new: true,
+        }
+      );
       if (custUpdate) {
-        console.log('cust-updated');
         req.body = {
           agentId: agentCheck._id,
           agentName: agentCheck.userName,
@@ -674,7 +680,6 @@ module.exports.userToken = async (req, res) => {
         success: true,
         message: data.authSuccess.tokenDeleted,
       });
-      console.log('deleted');
     } else {
       if (
         checkUser.uType === uTypes.customer &&
@@ -727,7 +732,7 @@ module.exports.userToken = async (req, res) => {
 };
 
 module.exports.custTerminate = async (req, res, next) => {
-  // agent sets customer status to delete and end chat
+  // agent sets customer status to delete and ends chat
   try {
     const checkAgent = await userAuthModel.findOne({
       _id: req.myId,
@@ -736,6 +741,7 @@ module.exports.custTerminate = async (req, res, next) => {
 
     if (checkAgent) {
       const { custId, custUserName, resolution } = req.body;
+      if (!resolution || resolution === '') throw data.chat.resolutionMissing;
       userAuthModel.findOneAndUpdate(
         {
           _id: custId,
@@ -774,43 +780,97 @@ module.exports.custTerminate = async (req, res, next) => {
   }
 };
 
-module.exports.custDelete = async (req, res, next) => {
+module.exports.custEndChat = async (req, res, next) => {
   // end chat if customer ends chat - update customer status to deleted and next
   const error = [];
-  try {
-    userAuthModel.findOneAndUpdate(
-      {
-        _id: req.myId,
-        uType: req.type,
-      },
-      {
-        verified: false,
-        status: uStatus.deleted,
-      },
-      {
-        new: true,
-      },
-      (err, custStatus) => {
-        if (err) throw data.authErrors.userNotFound;
+  if (req.type === uTypes.customer) {
+    try {
+      const custStatus = await userAuthModel.findOneAndUpdate(
+        {
+          _id: req.myId,
+          uType: req.type,
+        },
+        {
+          verified: false,
+          status: uStatus.deleted,
+        },
+        {
+          new: true,
+        }
+      );
+      if (custStatus) {
         req.body = {
           custId: custStatus._id,
           custUserName: custStatus.userName,
           status: custStatus.status,
           verified: custStatus.verified,
         };
-        console.log(req.body);
         next();
-      }
-    );
-  } catch (err) {
-    error.push(err);
-  }
+      } else throw data.authErrors.userNotFound;
+    } catch (err) {
+      error.push(err);
+    }
+  } else error.push(data.authErrors.invalidType);
 
   if (error.length > 0) {
     res.status(400).json({
       error: {
         code: data.common.serverError,
         errorMessage: error,
+      },
+    });
+  }
+};
+
+module.exports.inactiveCustomers = async (req, res, next) => {
+  try {
+    //find customers 'created' over 5 mins ago and not active and mark them as deleted.
+    // frontend to display a message to them as 'No agent available' - when userToken API runs (if the user is still waiting)
+    const expiryTime = Math.floor(Date.now() / 1000);
+    -300;
+    const list = await userAuthModel.find({
+      uType: uTypes.customer,
+      verified: false,
+      status: uStatus.created,
+      createdAt: {
+        $lte: expiryTime,
+      },
+    });
+
+    if (list && list.length > 0) {
+      const shortList = list.map((cust) => {
+        return {
+          _id: cust._id,
+          userName: cust.userName,
+          inactiveSince: new Date((expiryTime - cust.createdAt + 300) * 1000),
+          status: data.status.deleted,
+        };
+      });
+      const listIds = shortList.map((cust) => {
+        return cust._id;
+      });
+      //inactive users found. Proceed to delete
+      userAuthModel.deleteMany(
+        {
+          _id: {
+            $in: listIds,
+          },
+        },
+        (err, result) => {
+          if (err) throw err;
+          else {
+            req.deleted = result;
+            req.custList = list;
+            next();
+          }
+        }
+      );
+    } else throw data.authErrors.userNotFound;
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
       },
     });
   }

@@ -8,7 +8,6 @@ module.exports.addChat = async (req, res) => {
   try {
     const { agentId, agentName, custId, custUserName, status, verified } =
       req.body;
-    console.log('chat-controller reached', agentId, custId, status, verified);
     const chatPresent = await chatModel.findOne({
       customerId: custId,
       customerName: custUserName,
@@ -24,13 +23,13 @@ module.exports.addChat = async (req, res) => {
           customerId: custId,
           customerName: custUserName,
           status: data.chat.started,
+          rating: 0,
           resolution: '',
           chatEndedBy: '',
           startTime: new Date(),
           endTime: '',
         });
         if (chatCreate) {
-          console.log('chat created', chatCreate);
           res.status(200).json({
             success: true,
             message: data.chat.started,
@@ -51,31 +50,77 @@ module.exports.addChat = async (req, res) => {
   }
 };
 
+module.exports.rateChat = async (req, res) => {
+  if (req.myId && req.type === data.types.customer) {
+    try {
+      const { rating } = req.body;
+      if (!rating || !/\d/.test(rating) || rating < 0 || rating > 5)
+        throw data.chat.ratingMissing;
+      const rateUpdate = await chatModel.findOneAndUpdate(
+        {
+          customerId: req.myId,
+        },
+        {
+          rating: rating,
+        },
+        {
+          new: true,
+        }
+      );
+      if (rateUpdate && rateUpdate.status === data.chat.started) {
+        res.status(200).json({
+          success: true,
+          message: data.chat.ratingAdded,
+          detail: rateUpdate,
+        });
+      } else throw data.chat.ratingFailed;
+    } catch (err) {
+      res.status(400).json({
+        error: {
+          code: data.common.serverError,
+          detail: err,
+        },
+      });
+    }
+  } else {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: data.authErrors.invalidType,
+      },
+    });
+  }
+};
+
 module.exports.endChat = async (req, res) => {
   // end a chat by marking chat status as ended, resolution value, end time as current time,
-  // to pass data ahead to set customer status as deleted ?
   try {
     const { agentId, agentName, custId, custUserName, resolution } = req.body;
-    const chatEndedBy =
-      !agentId || !agentName ? data.types.customer : data.types.agent;
-    if (!resolution || resolution === '') throw data.chat.resolutionMissing;
+    let chatDetails = {};
+    if (!agentId || !agentName) {
+      //agentId and details not present. Chat must be ended by customer
+      chatDetails = {
+        status: data.chat.customerEnded,
+        chatEndedBy: data.types.customer,
+      };
+    } else {
+      chatDetails = {
+        status: data.chat.ended,
+        endTime: new Date(),
+        resolution,
+      };
+    }
     chatModel.findOneAndUpdate(
       {
         customerId: custId,
         customerName: custUserName,
       },
-      {
-        status: data.chat.ended,
-        endTime: new Date(),
-        chatEndedBy,
-        resolution,
-      },
+      chatDetails,
       {
         new: true,
       },
       (err, chatEnded) => {
-        console.log(chatEnded);
-        if (err) throw data.chat.endFailed;
+        if (err || !chatEnded) throw data.chat.endFailed;
         res.status(200).json({
           success: true,
           message: data.chat.ended,
@@ -96,16 +141,19 @@ module.exports.endChat = async (req, res) => {
 module.exports.listChat = async (req, res) => {
   try {
     const { status } = req.body;
-    const findChats = await chatModel.find({
-      agentId: req.myId,
-      status: status,
-    }).limit(10);
+    const agentId = req.type === data.types.admin ? req.body.agentId : req.myId;
+    const findChats = await chatModel
+      .find({
+        agentId: agentId,
+        status: status,
+      })
+      .limit(10);
 
     if (findChats && findChats.length > 0) {
       res.status(200).json({
         success: true,
         message: data.chat.foundChats,
-        detail: findChats
+        detail: findChats,
       });
     } else {
       throw data.chat.notFound;
@@ -115,7 +163,54 @@ module.exports.listChat = async (req, res) => {
       error: {
         code: data.common.serverError,
         detail: err,
-      }
-    })
+      },
+    });
   }
-}
+};
+
+module.exports.inactiveChat = async (req, res) => {
+  try {
+    let updateList = [];
+    req.custList.forEach(async (cust) => {
+      const inactiveSince =
+        cust.inactiveSince.getUTCDate().toString().padStart(2, '0') +
+        ':' +
+        cust.inactiveSince.getUTCHours().toString().padStart(2, '0') +
+        ':' +
+        cust.inactiveSince.getUTCMinutes().toString().padStart(2, '0') +
+        ':' +
+        cust.inactiveSince.getUTCSeconds().toString().padStart(2, '0');
+      const inactiveData = {
+        agentId: data.common.notFound,
+        agentName: data.common.notFound,
+        customerId: cust._id,
+        customerName: cust.userName,
+        status: data.chat.timeout,
+        resolution: 'inactive for ' + inactiveSince,
+        rating: 0,
+        startTime: new Date(),
+        endTime: 0,
+        chatEndedBy: data.chat.systemEnded,
+      };
+      chatModel.create(inactiveData, (err, chatLog) => {
+        if (err) throw err;
+        updateList.push(chatLog._id);
+      });
+    });
+    if (updateList || updateList.length > 0) {
+      res.status(200).json({
+        success: true,
+        message: data.chat.deleted,
+        detail: updateList,
+        info: req.deleted,
+      });
+    }
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
+    });
+  }
+};

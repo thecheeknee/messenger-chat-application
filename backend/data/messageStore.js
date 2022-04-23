@@ -14,15 +14,23 @@ module.exports = Object.freeze({
   chat: {
     started: 'started',
     ended: 'ended',
+    customerEnded: 'customer_ended',
+    deleted: 'deleted',
+    timeout: 'timeout',
+    systemEnded: 'ended_by_system',
     startFailed: 'start_failed',
     chatPresent: 'chat_present',
     endFailed: 'end_failed',
     resolutionMissing: 'resolution_missing',
+    ratingAdded: 'rating_added',
+    ratingMissing: 'rating_missing',
+    ratingFailed: 'rating_failed',
   },
 
   resolution: {
     byCustomer: 'chat ended by customer',
     byAgent: 'chat ended by agent',
+    systemEnded: 'chat request timed out',
   },
 
   common: {

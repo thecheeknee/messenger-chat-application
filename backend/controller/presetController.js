@@ -18,7 +18,6 @@ module.exports.getPresets = async (req, res) => {
     }
 
     if (errors.length > 0) {
-      console.log(errors);
       throw errors;
     }
   } catch (err) {
@@ -33,7 +32,7 @@ module.exports.getPresets = async (req, res) => {
 
 module.exports.savePreset = async (req, res) => {
   try {
-    const { tag, message } = req.body;
+    const { tag, message, type, responseData } = req.body;
     if (!tag || tag === '' || !message || message === '') {
       throw data.msgErrors.presetInvalid;
     }
@@ -43,6 +42,8 @@ module.exports.savePreset = async (req, res) => {
       },
       {
         message: message,
+        responseType: type,
+        expectedResponse: responseData,
       },
       {
         new: true,

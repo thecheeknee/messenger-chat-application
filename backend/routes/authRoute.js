@@ -11,12 +11,14 @@ const {
   custCreate,
   custAlert,
   custVerify,
-  custDelete,
+  custEndChat,
   custTerminate,
   userToken,
+  inactiveCustomers,
 } = require('../controller/authController');
 const {
   addChat,
+  inactiveChat,
   endChat,
 } = require('../controller/chatController');
 const {
@@ -34,8 +36,9 @@ router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
 router.post('/cust-alert', authMiddleware, custAlert);
 router.post('/cust-verify', authMiddleware, custVerify, addChat);
-router.post('/cust-end-chat', authMiddleware, custDelete, endChat);
+router.post('/cust-end-chat', authMiddleware, custEndChat, endChat);
 router.post('/cust-terminate', authMiddleware, custTerminate, endChat);
+router.post('/inactive-cust', inactiveCustomers, inactiveChat);
 router.post('/token', authMiddleware, userToken);
 
 module.exports = router;
