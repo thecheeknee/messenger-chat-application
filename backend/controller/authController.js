@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const validator = require('validator');
 const userAuthModel = require('../models/authModel');
+const chatModel = require('../models/chatModel');
 const data = require('../data/messageStore');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -10,7 +11,8 @@ const uStatus = data.status;
 
 module.exports.userRegister = async (req, res) => {
   // for registering new agents / admin if admin not present
-  const { userName, name, email, type, password, confirmPassword } = req.body;
+  const { userName, name, email, type, password, confirmPassword, adminName } =
+    req.body;
   const error = [];
 
   if (!type || type === uTypes.customer) {
@@ -54,6 +56,10 @@ module.exports.userRegister = async (req, res) => {
 
       if (type === uTypes.agent && !checkAdmin) {
         throw data.authErrors.adminMissing;
+      }
+
+      if (type == uTypes.agent && adminName !== checkAdmin.name) {
+        throw data.authErrors.verifyFailed;
       }
 
       const checkUser = await userAuthModel.findOne({
@@ -662,20 +668,13 @@ module.exports.userToken = async (req, res) => {
     let filterData = {
       _id: req.myId,
       type: req.type,
-      status: '',
     };
-    if (req.type === uTypes.customer) {
-      if (!req.verified) {
-        // if verified is false, then check if user is newly created
-        filterData.status = uStatus.created;
-      } else {
-        filterData.status = uStatus.active;
-      }
-    } else {
+    if (req.type !== uTypes.customer) {
+      //only active agents and admin should be allowed to continue.
       filterData.status = uStatus.active;
     }
     const checkUser = await userAuthModel.findOne(filterData);
-    if (!checkUser) {
+    if (!checkUser || checkUser.status === uStatus.deleted) {
       res.status(200).cookie('authToken', '').json({
         success: true,
         message: data.authSuccess.tokenDeleted,
@@ -686,33 +685,18 @@ module.exports.userToken = async (req, res) => {
         req.status === uStatus.created &&
         checkUser.status === uStatus.active
       ) {
-        // customer chat request has been accepted by agent. Customer is now active & verified
-        const token = jwt.sign(
-          {
-            id: checkUser._id,
-            userName: checkUser.userName,
-            name: checkUser.name,
-            type: checkUser.type,
-            verified: checkUser.verified,
-            status: checkUser.status,
-            registerTime: checkUser.createdAt,
-          },
-          process.env.SECRET,
-          {
-            expiresIn: process.env.TOKEN_EXP,
-          }
-        );
+        // customer chat request has been accepted by agent. Customer is now active & verified. Get chat details and share to customer
+        const chatDetails = await chatModel
+          .findOne({
+            customerId: checkUser._id,
+            customerName: checkUser.userName,
+          })
+          .select('_id status resolution rating');
 
-        const options = {
-          expires: new Date(
-            Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
-          ),
-        };
-
-        res.status(201).cookie('authToken', token, options).json({
+        res.status(200).json({
           success: true,
-          message: data.authSuccess.userAdded,
-          token,
+          message: data.authSuccess.userVerified,
+          detail: chatDetails,
         });
       } else {
         res.status(200).json({
