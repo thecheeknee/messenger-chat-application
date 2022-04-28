@@ -718,6 +718,10 @@ module.exports.userToken = async (req, res) => {
         res.status(200).json({
           success: true,
           message: data.authSuccess.userVerified,
+          detail: {
+            type: checkUser.uType,
+            status: checkUser.status,
+          },
         });
       }
     }

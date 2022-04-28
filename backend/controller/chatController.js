@@ -142,13 +142,10 @@ module.exports.listChat = async (req, res) => {
   try {
     const { status } = req.body;
     const agentId = req.type === data.types.admin ? req.body.agentId : req.myId;
-    const findChats = await chatModel
-      .find({
-        agentId: agentId,
-        status: status,
-      })
-      .limit(10);
-
+    const findChats = await chatModel.find({
+      agentId: agentId,
+      status: status,
+    });
     if (findChats && findChats.length > 0) {
       res.status(200).json({
         success: true,
