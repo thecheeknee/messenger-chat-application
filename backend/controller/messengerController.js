@@ -9,7 +9,7 @@ module.exports.initiateMessage = async (req, res, next) => {
     if (req.myId && req.type === data.types.agent) {
       //requester is an agent. Initiate first message to customer. This is connected to cust-verify by UI.
       // UI will trigger initiateMessage
-      // UI will reinitate listChat as soon as success response is received to update customer list
+      // UI will reinitate listChat as soon as success response contains initiated: true
       const getAgent = await User.findOne({
         _id: req.myId,
         uType: data.types.agent,
@@ -44,6 +44,8 @@ module.exports.initiateMessage = async (req, res, next) => {
             chatId: chatDetails._id,
             message: firstMessage.text,
             options: firstMessage.expectedResponse,
+            responseType: firstMessage.responseType,
+            initiated: true,
           };
           next();
         } else throw data.authErrors.invalidName;
@@ -60,7 +62,8 @@ module.exports.initiateMessage = async (req, res, next) => {
 };
 
 module.exports.messageUploadDB = async (req, res) => {
-  const { senderName, chatId, message, options } = req.body;
+  const { senderName, chatId, message, options, responseType, initiated } =
+    req.body;
   const senderId = req.myId;
 
   try {
@@ -76,12 +79,14 @@ module.exports.messageUploadDB = async (req, res) => {
           message: {
             text: message,
             options: options,
+            responseType,
           },
         });
         if (insertMessage && insertMessage._id) {
           res.status(200).json({
             success: true,
             message: data.msgSuccess.messageSent,
+            initiated: initiated ? initiated : false,
           });
         }
       }

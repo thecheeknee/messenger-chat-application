@@ -23,6 +23,10 @@ const messageSchema = new Schema(
         type: Object,
         default: {},
       },
+      responseType: {
+        type: String,
+        default: '',
+      },
     },
   },
   { timestamps: true }

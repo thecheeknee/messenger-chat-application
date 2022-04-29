@@ -719,92 +719,38 @@ module.exports.userToken = async (req, res) => {
   }
 };
 
-module.exports.custTerminate = async (req, res, next) => {
-  // agent sets customer status to delete and ends chat
+module.exports.custDelete = async (req, res) => {
+  // if chat is marked as ended/customerEnded - update customer status to deleted
   try {
-    const checkAgent = await userAuthModel.findOne({
-      _id: req.myId,
-      uType: uTypes.agent,
-    });
-
-    if (checkAgent) {
-      const { custId, custUserName, resolution } = req.body;
-      if (!resolution || resolution === '') throw data.chat.resolutionMissing;
-      userAuthModel.findOneAndUpdate(
-        {
-          _id: custId,
-          uType: uTypes.customer,
-          userName: custUserName,
-        },
-        {
-          verified: false,
-          status: uStatus.deleted,
-        },
-        {
-          new: true,
-        },
-        (err, custStatus) => {
-          if (err) throw err;
-          else {
-            req.body = {
-              agentId: checkAgent._id,
-              agentName: checkAgent.userName,
-              custId: custStatus._id,
-              custUserName: custStatus.userName,
-              resolution,
-            };
-            next();
-          }
+    const { custId } = req.body;
+    userAuthModel.findByIdAndUpdate(
+      custId,
+      {
+        verified: false,
+        status: uStatus.deleted,
+      },
+      {
+        new: true,
+      },
+      (err, custStatus) => {
+        if (err) throw err;
+        else {
+          res.status(200).json({
+            success: true,
+            message: data.authSuccess.custDeleted,
+            detail: {
+              userName: custStatus.userName,
+              status: custStatus.status,
+            },
+          });
         }
-      );
-    } else throw data.authErrors.invalidType;
+      }
+    );
   } catch (err) {
     res.status(400).json({
       error: {
         code: data.common.serverError,
-        message: err,
-      },
-    });
-  }
-};
-
-module.exports.custEndChat = async (req, res, next) => {
-  // end chat if customer ends chat - update customer status to deleted and next
-  const error = [];
-  if (req.type === uTypes.customer) {
-    try {
-      const custStatus = await userAuthModel.findOneAndUpdate(
-        {
-          _id: req.myId,
-          uType: req.type,
-        },
-        {
-          verified: false,
-          status: uStatus.deleted,
-        },
-        {
-          new: true,
-        }
-      );
-      if (custStatus) {
-        req.body = {
-          custId: custStatus._id,
-          custUserName: custStatus.userName,
-          status: custStatus.status,
-          verified: custStatus.verified,
-        };
-        next();
-      } else throw data.authErrors.userNotFound;
-    } catch (err) {
-      error.push(err);
-    }
-  } else error.push(data.authErrors.invalidType);
-
-  if (error.length > 0) {
-    res.status(400).json({
-      error: {
-        code: data.common.serverError,
-        errorMessage: error,
+        errorMessage: err,
       },
     });
   }

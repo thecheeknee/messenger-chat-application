@@ -53,19 +53,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('delivaredMessage', (msg) => {
-    const user = findFriend(msg.senderId);
-    if (user !== undefined) {
-      socket.to(user.socketId).emit('msgDelivaredResponse', msg);
-    }
-  });
-  socket.on('seen', (data) => {
-    const user = findFriend(data.senderId);
-    if (user !== undefined) {
-      socket.to(user.socketId).emit('seenSuccess', data);
-    }
-  });
-
   socket.on('typingMessage', (data) => {
     const user = findFriend(data.reseverId);
     if (user !== undefined) {

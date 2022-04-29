@@ -92,40 +92,38 @@ module.exports.rateChat = async (req, res) => {
   }
 };
 
-module.exports.endChat = async (req, res) => {
+module.exports.endChat = async (req, res, next) => {
   // end a chat by marking chat status as ended, resolution value, end time as current time,
   try {
-    const { agentId, agentName, custId, custUserName, resolution } = req.body;
     let chatDetails = {};
-    if (!agentId || !agentName) {
-      //agentId and details not present. Chat must be ended by customer
+    const { chatId, resolution } = req.body;
+    if (req.type === data.types.agent) {
+      if (!resolution || resolution === '') throw data.chat.resolutionMissing;
+      else {
+        chatDetails = {
+          status: data.chat.ended,
+          resolution,
+        };
+      }
+    } else {
       chatDetails = {
         status: data.chat.customerEnded,
         chatEndedBy: data.types.customer,
       };
-    } else {
-      chatDetails = {
-        status: data.chat.ended,
-        endTime: new Date(),
-        resolution,
-      };
     }
-    chatModel.findOneAndUpdate(
-      {
-        customerId: custId,
-        customerName: custUserName,
-      },
+    chatModel.findByIdAndUpdate(
+      chatId,
       chatDetails,
       {
         new: true,
       },
       (err, chatEnded) => {
         if (err || !chatEnded) throw data.chat.endFailed;
-        res.status(200).json({
-          success: true,
-          message: data.chat.ended,
-          detail: chatEnded,
-        });
+        // send custId for deletion
+        req.body = {
+          custId: chatEnded.custId,
+        };
+        next();
       }
     );
   } catch (err) {
