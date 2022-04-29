@@ -7,9 +7,12 @@ const data = require('../data/messageStore');
 module.exports.initiateMessage = async (req, res, next) => {
   try {
     if (req.myId && req.type === data.types.agent) {
-      //requester is an agent. Initiate first message to customer. This is connected to cust-verify by UI.
-      // UI will trigger initiateMessage
-      // UI will reinitate listChat as soon as success response contains initiated: true
+      /** 
+       * requester is an agent. Initiate first message to customer. 
+       * This is connected to cust-verify by UI.
+       * UI will trigger initiateMessage
+       * UI will reinitate listChat as soon as success response contains initiated: true
+      */
       const getAgent = await User.findOne({
         _id: req.myId,
         uType: data.types.agent,
@@ -103,7 +106,10 @@ module.exports.messageUploadDB = async (req, res) => {
 
 module.exports.messageGet = async (req, res) => {
   const chatId = req.params.id;
-
+  /**
+   * this should trigger on socket.emit by either agent or customer
+   * belonging to the same socket when they successfully exec messageUploadDB
+   *  */ 
   try {
     chatModel.findById(chatId, async (err, docs) => {
       if (err) throw err;
@@ -124,12 +130,17 @@ module.exports.messageGet = async (req, res) => {
             },
             (warn, messageList) => {
               if (warn) throw warn;
+              /**
+               * check if the last message is by the agent on the customer UI.
+               * If agent, then analyse the message and take appropriate action.
+               *  */
               res.status(200).json({
                 success: true,
                 messageList: messageList,
               });
             }
           )
+          .sort(-1)
           .select('-senderId -receiverId');
       }
     });

@@ -4,7 +4,7 @@ const chatModel = require('../models/chatModel');
 const data = require('../data/messageStore');
 
 module.exports.addChat = async (req, res) => {
-  // create a chat with agent, customer, status as approved, resolution as empty, start time as current time, end time as null
+  /** create a chat with agent, customer, status as approved, resolution as empty, start time as current time, end time as null */
   try {
     const { agentId, agentName, custId, custUserName, status, verified } =
       req.body;
@@ -93,7 +93,7 @@ module.exports.rateChat = async (req, res) => {
 };
 
 module.exports.endChat = async (req, res, next) => {
-  // end a chat by marking chat status as ended, resolution value, end time as current time,
+  /** end chat by either customer (customerEnded) or agent (with resolution) */
   try {
     let chatDetails = {};
     const { chatId, resolution } = req.body;
@@ -119,7 +119,7 @@ module.exports.endChat = async (req, res, next) => {
       },
       (err, chatEnded) => {
         if (err || !chatEnded) throw data.chat.endFailed;
-        // send custId for deletion
+        /** send custId for deletion */
         req.body = {
           custId: chatEnded.custId,
         };

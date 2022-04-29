@@ -10,7 +10,7 @@ const uTypes = data.types;
 const uStatus = data.status;
 
 module.exports.userRegister = async (req, res) => {
-  // for registering new agents / admin if admin not present
+  /** for registering new agents / admin if admin not present */
   const { userName, name, email, type, password, confirmPassword, adminName } =
     req.body;
   const error = [];
@@ -252,7 +252,7 @@ module.exports.userLogin = async (req, res) => {
 
 module.exports.userLogout = (req, res) => {
   if (req.myId && (req.type === uTypes.admin || req.type === uTypes.agent)) {
-    // update log data with logout time
+    /** update log data with logout time */
     res.status(200).cookie('authToken', '').json({
       success: true,
     });
@@ -266,11 +266,11 @@ module.exports.userLogout = (req, res) => {
 };
 
 module.exports.userVerify = async (req, res) => {
-  // to verify agents by admin
+  /** to verify agents by admin */ 
   const { verifyList } = req.body;
   try {
     if (req.myId && req.type === uTypes.admin) {
-      // verify all IDs under verifyList
+      /** verify all IDs under verifyList */
       verifyList.forEach(async (element) => {
         await userAuthModel.findOneAndUpdate(
           {
@@ -304,11 +304,11 @@ module.exports.userVerify = async (req, res) => {
 };
 
 module.exports.userList = async (req, res) => {
-  // fetch list of users where type = agent
+  /** fetch list of users by Admin where type = agent */
   try {
     if (req.myId && req.type === uTypes.admin) {
       const { verified, status } = req.body;
-      // find agents who are 'created' (new + unverified), 'active' (current + verified) or 'deleted' (old + unverified)
+      /** find agents who are 'created' (new + unverified), 'active' (current + verified) or 'deleted' (old + unverified) */
       userAuthModel.find(
         {
           uType: uTypes.agent,
@@ -344,7 +344,7 @@ module.exports.userList = async (req, res) => {
 };
 
 module.exports.userChangePassword = async (req, res) => {
-  //check if the user and token match and allow password to be changed
+  /** check if the user and token match and allow password to be changed */
   const { userName, password, newPassword, confirmPassword } = req.body;
   try {
     if (req.type !== uTypes.customer) {
@@ -367,7 +367,7 @@ module.exports.userChangePassword = async (req, res) => {
           checkUser.type === uTypes.admin &&
           userName !== checkUser.userName
         ) {
-          //trying to remove admin account without providing userName
+          /** trying to remove admin account without providing userName */
           throw data.authErrors.adminMissing;
         }
 
@@ -416,7 +416,7 @@ module.exports.userChangePassword = async (req, res) => {
 };
 
 module.exports.userDelete = async (req, res) => {
-  //unverify user passed as attribute if current user type is admin
+  /** unverify user passed as attribute if current user type is admin */
   const { password, agentUName, agentEmail } = req.body;
   try {
     const checkAdmin = await userAuthModel
@@ -430,7 +430,7 @@ module.exports.userDelete = async (req, res) => {
       const matchPassword = await bcrypt.compare(password, checkAdmin.password);
 
       if (matchPassword && req.type === uTypes.admin) {
-        //admin confirmed. Unverify user if type == agent
+        /** admin confirmed. Unverify user if type == agent */
         userAuthModel.findOneAndUpdate(
           {
             userName: agentUName,
@@ -477,14 +477,14 @@ module.exports.userDelete = async (req, res) => {
 };
 
 module.exports.custCreate = async (req, res) => {
-  //create a temporary user
+  /** create a temporary user */
   const chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
   const { name, pincode } = req.body;
   const errors = [];
 
   try {
     const { authToken } = req.cookies;
-    // check if token is already present in the system
+    /** check if token is already present in the system */
     if (authToken) throw data.authErrors.userExists;
 
     if (!name || /\d/.test(name)) {
@@ -566,8 +566,11 @@ module.exports.custCreate = async (req, res) => {
 };
 
 module.exports.custAlert = async (req, res) => {
-  // to be run from agent end (based on availability) every 30 seconds. It will keep checking if there are new customers added in the system
-  // frontend will check if agent has any slot available
+  /**
+   * to be run from agent end (based on availability) every 30 seconds.
+   * It will keep checking if there are new customers added in the system.
+   * frontend will check if agent has any slot available
+   */
   try {
     if (req.type === uTypes.agent) {
       const checkAgent = await userAuthModel.findById(req.myId);
@@ -616,7 +619,7 @@ module.exports.custAlert = async (req, res) => {
 
 module.exports.custVerify = async (req, res, next) => {
   try {
-    // verify customer by agent and start chat
+    /** verify customer by agent and start chat */
     const agentCheck = await userAuthModel.findOne({
       _id: req.myId,
       uType: uTypes.agent,
@@ -662,15 +665,17 @@ module.exports.custVerify = async (req, res, next) => {
 };
 
 module.exports.userToken = async (req, res) => {
-  // keep checking if user is present in the system, else delete token.
-  // To be run every 60 seconds to force session to terminate if chat has ended.
+  /** 
+   * keep checking if user is present in the system, else delete token.
+   * To be run every 60 seconds to force session to terminate if chat has ended.
+   */
   try {
     let filterData = {
       _id: req.myId,
       type: req.type,
     };
     if (req.type !== uTypes.customer) {
-      //only active agents and admin should be allowed to continue.
+      /** only active agents and admin should be allowed to continue. */
       filterData.status = uStatus.active;
     }
     const checkUser = await userAuthModel.findOne(filterData);
@@ -685,7 +690,11 @@ module.exports.userToken = async (req, res) => {
         req.status === uStatus.created &&
         checkUser.status === uStatus.active
       ) {
-        // customer chat request has been accepted by agent. Customer is now active & verified. Get chat details and share to customer
+        /** 
+         * customer chat request has been accepted by agent. 
+         * Customer is now active & verified. 
+         * Get chat details and create a socket between customer and agent
+         */
         const chatDetails = await chatModel
           .findOne({
             customerId: checkUser._id,
@@ -720,7 +729,7 @@ module.exports.userToken = async (req, res) => {
 };
 
 module.exports.custDelete = async (req, res) => {
-  // if chat is marked as ended/customerEnded - update customer status to deleted
+  /** if chat is marked as ended/customerEnded - update customer status to deleted */
   try {
     const { custId } = req.body;
     userAuthModel.findByIdAndUpdate(
@@ -758,8 +767,10 @@ module.exports.custDelete = async (req, res) => {
 
 module.exports.inactiveCustomers = async (req, res, next) => {
   try {
-    //find customers 'created' over 5 mins ago and not active and mark them as deleted.
-    // frontend to display a message to them as 'No agent available' - when userToken API runs (if the user is still waiting)
+    /** 
+     * find customers 'created' over 5 mins ago and not active and mark them as deleted.
+     * frontend to display a message to them as 'No agent available' - when userToken API runs (if the user is still waiting) 
+     */
     const expiryTime = Math.floor(Date.now() / 1000);
     -300;
     const list = await userAuthModel.find({
@@ -783,7 +794,7 @@ module.exports.inactiveCustomers = async (req, res, next) => {
       const listIds = shortList.map((cust) => {
         return cust._id;
       });
-      //inactive users found. Proceed to delete
+      /** inactive users found. Proceed to delete */
       userAuthModel.deleteMany(
         {
           _id: {
