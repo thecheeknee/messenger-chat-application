@@ -45,6 +45,7 @@ module.exports = Object.freeze({
   },
 
   authErrors: {
+    invalidDetails: 'invalid_details',
     adminMissing: 'admin_missing',
     invalidUName: 'username_invalid',
     invalidName: 'name_invalid',

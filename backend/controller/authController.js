@@ -165,8 +165,8 @@ module.exports.userLogin = async (req, res) => {
   if (error.length > 0) {
     res.status(400).json({
       error: {
-        code: data.common.serverError,
-        errorMessage: error,
+        code: data.authErrors.invalidDetails,
+        detail: error,
       },
     });
   } else {

@@ -1,7 +1,7 @@
 <script type="text/javascript">
   /* eslint-disable no-undef */
   /* eslint-disable no-unused-vars */
-  let loginScreen, waitingScreen, errorScreen, notVerifiedScreen, notFoundScreen;
+  let loginScreen, waitingScreen, errorScreen, notVerifiedScreen, notFoundScreen, adminMissingScreen;
 
   class Account {
     #apiUrl;
@@ -27,6 +27,49 @@
       });
     }
 
+    registerNewAccount (userName, name, email, type, password, confirmPassword, adminName) {
+      try {
+        const accountInfo = {
+          userName, name, email, type, password, confirmPassword, adminName
+        };
+
+        const addUser = this.#fetchApi('/user-register', this._post, accountInfo);
+
+        addUser
+          .then(json => {
+            if (json.success) {
+              waitingScreen.classList.add('d-none');
+              if (json.detail === 'agent') {
+                notVerifiedScreen.classList.remove('d-none');
+              }
+              if (json.detail === 'admin') {
+                //redirect to admin dashboard
+              }
+            } else throw json;
+          })
+          .catch(err => {
+            const errorCode = err.error.code;
+            waitingScreen.classList.add('d-none');
+            switch (errorCode) {
+              case 'admin_missing':
+                adminMissingScreen.classList.remove('d-none');
+                break;
+              case 'user_exists':
+                notFoundScreen.classList.remove('d-none');
+                break;
+              case 'password_invalid':
+              case 'invalid_details':
+              default:
+                errorScreen.classList.remove('d-none');
+                break;
+            }
+          });
+      } catch (error) {
+        console.log(error);
+        errorScreen.classList.remove('d-none');
+      }
+    }
+
     loginToDashboard (email, password, type, userName = '') {
       try {
         const loginData = {
@@ -35,25 +78,41 @@
           userName,
           type
         }
-        const loginCheck = this.#fetchApi('', this._post, loginData);
+        const loginCheck = this.#fetchApi('/user-login', this._post, loginData);
 
         loginCheck
           .then(json => {
             if (json.success) {
+              waitingScreen.classList.add('d-none');
               if (json.detail === 'agent') {
                 // redirect to agent dashboard
               }
               if (json.detail === 'admin') {
                 //redirect to admin dashboard
               }
-            }
+            } else throw json;
           })
           .catch(err => {
-            console.log(err);
-          })
+            const errorCode = err.error.code;
+            waitingScreen.classList.add('d-none');
+            switch (errorCode) {
+              case 'verification_failed':
+                notVerifiedScreen.classList.remove('d-none');
+                break;
+              case 'user_not_found':
+                notFoundScreen.classList.remove('d-none');
+                break;
+              case 'password_invalid':
+              case 'invalid_details':
+              default:
+                errorScreen.classList.remove('d-none');
+                break;
+            }
+          });
       }
       catch (error) {
-        console.log(error)
+        console.log(error);
+        errorScreen.classList.remove('d-none');
       }
     }
   }
@@ -71,15 +130,29 @@
         document.getElementById('accType').addEventListener('change', validate, false);
         document.getElementById('adminUserName').addEventListener('change', validate, false);
         document.getElementById('staffLogin').addEventListener('submit', staffLogin, false);
-
+        clearCookies();
         break;
       case 'agent-register':
+        loginScreen = document.getElementById('loginScreen');
+        waitingScreen = document.getElementById('waiting');
+        errorScreen = document.getElementById('error');
+        notVerifiedScreen = document.getElementById('verifyPending');
+        adminMissingScreen = document.getElementById('adminMissing');
+        notFoundScreen = document.getElementById('notFound');
+        clearCookies();
         break;
       case 'logout':
       default:
         break;
     }
   })();
+
+  function clearCookies () {
+    const cookies = document.cookie.split(";");
+    cookies.forEach((cookie) => {
+      document.cookie = cookie + "=;expires=" + new Date(0).toUTCString();
+    });
+  }
 
   function validate(e) {
     const key = e.target;
@@ -106,6 +179,21 @@
     }
   }
 
+  function staffLogin (e) {
+    if (e.target.checkValidity() && document.querySelectorAll('.is-invalid').length === 0) {
+      e.preventDefault();
+      e.stopPropagation();
 
+      const email = document.getElementById('accEmail').value;
+      const type = document.getElementById('accType').value;
+      const userName = document.getElementById('adminUserName').value;
+      const password = document.getElementById('accPassword').value;
 
+      loginScreen.classList.add('d-none');
+      waitingScreen.classList.remove('d-none');
+
+      const acc = new Account();
+      acc.loginToDashboard(email, password, type, userName);
+    } else return false;
+  }
 </script>

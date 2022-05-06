@@ -23,6 +23,7 @@
               <div class="card-body d-none" id="error">
                 <div class="text-justify mt-4">
                   <p class="lead alert alert-danger">Some information was incorrect. Please check and try again</p>
+                  <a href="/login" class="btn btn-warning">Try Again</a>
                 </div>
               </div>
               <div class="card-body d-none" id="verifyPending">
@@ -33,6 +34,7 @@
               <div class="card-body d-none" id="notFound">
                 <div class="text-justify mt-4">
                   <p class="lead alert alert-danger">There was no account created with this email ID.</p>
+                  <a href="/login" class="btn btn-warning">Try Again with another email ID</a>
                 </div>
               </div>
               <div class="card-body d-none" id="waiting">
@@ -48,24 +50,24 @@
                 <form class="needs-validation" id="staffLogin" name="staffLogin" action="javascript:void(0);">
                   <div class="mb-3">
                     <label for="accEmail" class="form-label">Email address</label>
-                    <input type="email" class="form-control" id="accEmail" aria-describedby="emailHelp" required>
+                    <input type="email" class="form-control" id="accEmail" name="accEmail" aria-describedby="emailHelp" required>
                     <div id="emailHelp" class="form-text">Please enter your registered email ID</div>
                   </div>
                   <div class="mb-3">
                     <label for="accPassword" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="accPassword" required>
+                    <input type="password" class="form-control" id="accPassword" name="accPassword" required>
                   </div>
                   <div class="mb-3">
                     <label for="accType" class="form-label">Account Type</label>
-                    <select class="form-select" id="accType" aria-label="Default select example" required>
-                      <option selected>- Choose -</option>
+                    <select class="form-select" id="accType" name="accType" aria-label="Default select example" required>
+                      <option disabled>- Choose -</option>
                       <option value="agent">Agent</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
                   <div class="mb-3 d-none">
                     <label for="adminUserName" class="form-label">Admin Name</label>
-                    <input type="text" class="form-control" id="adminUserName" aria-describedby="userNameHelp" required>
+                    <input type="text" class="form-control" id="adminUserName" name="adminUserName" aria-describedby="userNameHelp">
                     <div id="userNameHelp" class="form-text">Please enter your Admin User Name for verification</div>
                   </div>
                   <div class="mb-3">

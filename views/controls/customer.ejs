@@ -507,15 +507,13 @@
   }
 
   function customerRegister (e) {
-    console.log(e.target.checkValidity());
-    e.preventDefault();
-    e.stopPropagation();
+    if (e.target.checkValidity() && document.querySelectorAll('.is-invalid').length === 0) {
+      e.preventDefault();
+      e.stopPropagation();
 
-    let nameInput = document.getElementById('name');
-    let pincodeInput = document.getElementById('pincode');
+      let nameInput = document.getElementById('name');
+      let pincodeInput = document.getElementById('pincode');
 
-    if (document.querySelectorAll('.is-invalid').length > 0) return false;
-    else {
       const customerName = nameInput.value.replace(/\s/g,'');
       const customerPincode = pincodeInput.value;
 
@@ -527,7 +525,10 @@
       
       const cust = new Customer();
       cust.custRegister(customerName, customerPincode);
+    } else {
+      return false;
     }
+    
   }
 </script>
 
