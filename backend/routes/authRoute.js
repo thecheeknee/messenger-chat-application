@@ -11,6 +11,7 @@ const {
   custCreate,
   custAlert,
   custVerify,
+  custFetchId,
   custDelete,
   userToken,
   inactiveCustomers,
@@ -35,9 +36,10 @@ router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
 router.post('/cust-alert', authMiddleware, custAlert);
 router.post('/cust-verify', authMiddleware, custVerify, addChat);
+router.post('/cust-cancel', authMiddleware, custFetchId, custDelete);
 router.post('/cust-end-chat', authMiddleware, endChat, custDelete);
 router.post('/agent-end-chat', authMiddleware, endChat, custDelete);
 router.post('/inactive-cust', inactiveCustomers, inactiveChat);
-router.post('/token', authMiddleware, userToken);
+router.get('/token', authMiddleware, userToken);
 
 module.exports = router;

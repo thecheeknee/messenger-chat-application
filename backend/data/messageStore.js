@@ -25,12 +25,18 @@ module.exports = Object.freeze({
     ratingAdded: 'rating_added',
     ratingMissing: 'rating_missing',
     ratingFailed: 'rating_failed',
+    foundChats: 'chat_found',
   },
 
   resolution: {
     byCustomer: 'chat ended by customer',
     byAgent: 'chat ended by agent',
     systemEnded: 'chat request timed out',
+  },
+
+  rating: {
+    good: 'good',
+    bad: 'bad',
   },
 
   common: {
@@ -60,11 +66,14 @@ module.exports = Object.freeze({
     userDeleted: 'user_deleted',
     passwordUpdated: 'password_updated',
     tokenDeleted: 'token_deleted',
+    custAdded: 'cust_added',
     custDeleted: 'cust_deleted',
+    custVerified: 'cust_verified',
     userVerified: 'user_verified',
   },
 
   chatAlerts: {
+    noChats: 'no_chats_present',
     chatWaiting: 'incoming_chat',
     chatDeclined: 'chat_declined',
   },

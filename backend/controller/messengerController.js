@@ -7,21 +7,21 @@ const data = require('../data/messageStore');
 module.exports.initiateMessage = async (req, res, next) => {
   try {
     if (req.myId && req.type === data.types.agent) {
-      /** 
-       * requester is an agent. Initiate first message to customer. 
+      /**
+       * requester is an agent. Initiate first message to customer.
        * This is connected to cust-verify by UI.
        * UI will trigger initiateMessage
        * UI will reinitate listChat as soon as success response contains initiated: true
-      */
+       */
       const getAgent = await User.findOne({
         _id: req.myId,
         uType: data.types.agent,
       });
       if (getAgent && getAgent.status === data.status.active) {
-        const { custId, firstMessage } = req.body;
-        if (custId && firstMessage) {
+        const { chatId, firstMessage } = req.body;
+        if (chatId && firstMessage) {
           const chatDetails = await chatModel.findOne({
-            customerId: custId,
+            _id: chatId,
             status: data.chat.started,
           });
           const last_msg = await messageModel
@@ -29,11 +29,11 @@ module.exports.initiateMessage = async (req, res, next) => {
               $or: [
                 {
                   senderId: req.myId,
-                  receiverId: custId,
+                  receiverId: chatDetails.customerId,
                 },
                 {
                   receiverId: req.myId,
-                  senderId: custId,
+                  senderId: chatDetails.customerId,
                 },
               ],
             })
@@ -70,30 +70,37 @@ module.exports.messageUploadDB = async (req, res) => {
   const senderId = req.myId;
 
   try {
-    chatModel.findById(chatId, async (err, docs) => {
-      if (err) throw err;
-      else {
-        const receiverId =
-          docs.agentId === senderId ? docs.customerId : docs.agentId;
-        const insertMessage = await messageModel.create({
-          senderId: senderId,
-          senderName: senderName,
-          receiverId: receiverId,
-          message: {
-            text: message,
-            options: options,
-            responseType,
-          },
-        });
-        if (insertMessage && insertMessage._id) {
-          res.status(200).json({
-            success: true,
-            message: data.msgSuccess.messageSent,
-            initiated: initiated ? initiated : false,
+    chatModel.findOne(
+      {
+        _id: chatId,
+      },
+      async (err, chat) => {
+        if (err) throw err;
+        else if (!chat) throw data.chatAlerts.noChats;
+        else {
+          console.log(chat);
+          const receiverId =
+            chat.agentId === senderId ? chat.customerId : chat.agentId;
+          const insertMessage = await messageModel.create({
+            senderId: senderId,
+            senderName: senderName,
+            receiverId: receiverId,
+            message: {
+              text: message,
+              options: options,
+              responseType,
+            },
           });
+          if (insertMessage && insertMessage._id) {
+            res.status(200).json({
+              success: true,
+              message: data.msgSuccess.messageSent,
+              initiated: initiated ? initiated : false,
+            });
+          }
         }
       }
-    });
+    );
   } catch (err) {
     res.status(500).json({
       error: {
@@ -109,7 +116,7 @@ module.exports.messageGet = async (req, res) => {
   /**
    * this should trigger on socket.emit by either agent or customer
    * belonging to the same socket when they successfully exec messageUploadDB
-   *  */ 
+   *  */
   try {
     chatModel.findById(chatId, async (err, docs) => {
       if (err) throw err;
@@ -140,7 +147,9 @@ module.exports.messageGet = async (req, res) => {
               });
             }
           )
-          .sort(-1)
+          .sort({
+            createdAt: 1,
+          })
           .select('-senderId -receiverId');
       }
     });

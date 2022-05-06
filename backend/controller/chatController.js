@@ -54,26 +54,27 @@ module.exports.rateChat = async (req, res) => {
   if (req.myId && req.type === data.types.customer) {
     try {
       const { rating } = req.body;
-      if (!rating || !/\d/.test(rating) || rating < 0 || rating > 5)
-        throw data.chat.ratingMissing;
-      const rateUpdate = await chatModel.findOneAndUpdate(
-        {
-          customerId: req.myId,
-        },
-        {
-          rating: rating,
-        },
-        {
-          new: true,
-        }
-      );
-      if (rateUpdate && rateUpdate.status === data.chat.started) {
-        res.status(200).json({
-          success: true,
-          message: data.chat.ratingAdded,
-          detail: rateUpdate,
-        });
-      } else throw data.chat.ratingFailed;
+      if (!rating || /\d/.test(rating)) throw data.chat.ratingMissing;
+      if (rating === data.rating.good || rating === data.rating.bad) {
+        const rateUpdate = await chatModel.findOneAndUpdate(
+          {
+            customerId: req.myId,
+            status: data.chat.started,
+          },
+          {
+            rating: rating,
+          },
+          {
+            new: true,
+          }
+        );
+        if (rateUpdate && rateUpdate.status === data.chat.started) {
+          res.status(200).json({
+            success: true,
+            message: data.chat.ratingAdded,
+          });
+        } else throw data.chat.ratingFailed;
+      } else throw data.chat.ratingMissing;
     } catch (err) {
       res.status(400).json({
         error: {
@@ -87,6 +88,41 @@ module.exports.rateChat = async (req, res) => {
       error: {
         code: data.common.serverError,
         detail: data.authErrors.invalidType,
+      },
+    });
+  }
+};
+
+module.exports.getMyChat = async (req, res) => {
+  try {
+    const { chatId } = req.body;
+    const findChat = await chatModel
+      .find({
+        _id: chatId,
+        customerId: req.myId,
+      })
+      .select('customerName agentName status rating');
+
+    if (findChat && findChat.length > 0) {
+      const detail = {
+        customerName: findChat[0].customerName,
+        agentName: findChat[0].agentName,
+        status: findChat[0].status,
+        rating: findChat[0].rating,
+      };
+      res.status(200).json({
+        success: true,
+        message: data.chat.foundChats,
+        detail: detail,
+      });
+    } else {
+      throw data.chatAlerts.noChats;
+    }
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
       },
     });
   }
@@ -118,12 +154,15 @@ module.exports.endChat = async (req, res, next) => {
         new: true,
       },
       (err, chatEnded) => {
-        if (err || !chatEnded) throw data.chat.endFailed;
-        /** send custId for deletion */
-        req.body = {
-          custId: chatEnded.custId,
-        };
-        next();
+        if (err) throw err;
+        console.log(chatEnded);
+        if (chatEnded) {
+          /** send custId for deletion */
+          req.body = {
+            custId: chatEnded.customerId,
+          };
+          next();
+        }
       }
     );
   } catch (err) {
@@ -166,37 +205,45 @@ module.exports.listChat = async (req, res) => {
 module.exports.inactiveChat = async (req, res) => {
   try {
     let updateList = [];
-    req.custList.forEach(async (cust) => {
-      const inactiveSince =
-        cust.inactiveSince.getUTCDate().toString().padStart(2, '0') +
-        ':' +
-        cust.inactiveSince.getUTCHours().toString().padStart(2, '0') +
-        ':' +
-        cust.inactiveSince.getUTCMinutes().toString().padStart(2, '0') +
-        ':' +
-        cust.inactiveSince.getUTCSeconds().toString().padStart(2, '0');
-      const inactiveData = {
-        agentId: data.common.notFound,
-        agentName: data.common.notFound,
-        customerId: cust._id,
-        customerName: cust.userName,
-        status: data.chat.timeout,
-        resolution: 'inactive for ' + inactiveSince,
-        rating: 0,
-        startTime: new Date(),
-        endTime: 0,
-        chatEndedBy: data.chat.systemEnded,
-      };
-      chatModel.create(inactiveData, (err, chatLog) => {
-        if (err) throw err;
-        updateList.push(chatLog._id);
+    if (req.custList && req.custList.length > 0) {
+      req.custList.forEach(async (cust) => {
+        const inactiveSince =
+          cust.inactiveSince.getUTCDate().toString().padStart(2, '0') +
+          ':' +
+          cust.inactiveSince.getUTCHours().toString().padStart(2, '0') +
+          ':' +
+          cust.inactiveSince.getUTCMinutes().toString().padStart(2, '0') +
+          ':' +
+          cust.inactiveSince.getUTCSeconds().toString().padStart(2, '0');
+        const inactiveData = {
+          agentId: data.common.notFound,
+          agentName: data.common.notFound,
+          customerId: cust._id,
+          customerName: cust.userName,
+          status: data.chat.timeout,
+          resolution: 'inactive for ' + inactiveSince,
+          rating: 0,
+          startTime: new Date(),
+          endTime: 0,
+          chatEndedBy: data.chat.systemEnded,
+        };
+        chatModel.create(inactiveData, (err, chatLog) => {
+          if (err) throw err;
+          updateList.push(chatLog._id);
+        });
       });
-    });
-    if (updateList || updateList.length > 0) {
+      if (updateList || updateList.length > 0) {
+        res.status(200).json({
+          success: true,
+          message: data.chat.deleted,
+          detail: updateList,
+          info: req.deleted,
+        });
+      }
+    } else {
       res.status(200).json({
         success: true,
-        message: data.chat.deleted,
-        detail: updateList,
+        message: data.authSuccess.custDeleted,
         info: req.deleted,
       });
     }

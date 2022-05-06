@@ -1,0 +1,111 @@
+<script type="text/javascript">
+  /* eslint-disable no-undef */
+  /* eslint-disable no-unused-vars */
+  let loginScreen, waitingScreen, errorScreen, notVerifiedScreen, notFoundScreen;
+
+  class Account {
+    #apiUrl;
+
+    constructor() {
+      this.#apiUrl = '<%= url %>';
+      this._get = 'GET';
+      this._post = 'POST';
+    }
+
+    #fetchApi (url, type, data) {
+      const fetchUrl = this.#apiUrl + url;
+      
+      const body = JSON.stringify(data);
+      return fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }, method: type,
+        body,
+      }).then((response) => {
+        return response.json();
+      });
+    }
+
+    loginToDashboard (email, password, type, userName = '') {
+      try {
+        const loginData = {
+          email,
+          password,
+          userName,
+          type
+        }
+        const loginCheck = this.#fetchApi('', this._post, loginData);
+
+        loginCheck
+          .then(json => {
+            if (json.success) {
+              if (json.detail === 'agent') {
+                // redirect to agent dashboard
+              }
+              if (json.detail === 'admin') {
+                //redirect to admin dashboard
+              }
+            }
+          })
+          .catch(err => {
+            console.log(err);
+          })
+      }
+      catch (error) {
+        console.log(error)
+      }
+    }
+  }
+
+  (function () {
+    const pathname = window.location.pathname.split('/')[1];
+    switch(pathname) {
+      case 'login':
+        loginScreen = document.getElementById('loginScreen');
+        waitingScreen = document.getElementById('waiting');
+        errorScreen = document.getElementById('error');
+        notVerifiedScreen = document.getElementById('verifyPending');
+        notFoundScreen = document.getElementById('notFound');
+        document.getElementById('accEmail').addEventListener('change', validate, false);
+        document.getElementById('accType').addEventListener('change', validate, false);
+        document.getElementById('adminUserName').addEventListener('change', validate, false);
+        document.getElementById('staffLogin').addEventListener('submit', staffLogin, false);
+
+        break;
+      case 'agent-register':
+        break;
+      case 'logout':
+      default:
+        break;
+    }
+  })();
+
+  function validate(e) {
+    const key = e.target;
+    const value = e.target.value;
+    switch (key.id) {
+      case 'accEmail':
+        if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)) key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
+      case 'accType':
+        if (value === 'admin') {
+          document.getElementById('adminUserName').setAttribute('required', true);
+          document.getElementById('adminUserName').parentNode.classList.remove('d-none');
+        } else {
+          document.getElementById('adminUserName').removeAttribute('required');
+          document.getElementById('adminUserName').value = '';
+          document.getElementById('adminUserName').parentNode.classList.add('d-none');
+        }
+        break;
+      case 'adminUserName':
+        if (value === '') key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
+    }
+  }
+
+
+
+</script>

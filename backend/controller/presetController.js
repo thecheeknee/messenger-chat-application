@@ -47,7 +47,7 @@ module.exports.savePreset = async (req, res) => {
       },
       {
         new: true,
-        upsert: true, /** Make this update into an upsert */
+        upsert: true /** Make this update into an upsert */,
       }
     );
 

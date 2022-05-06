@@ -59,7 +59,7 @@ module.exports.userRegister = async (req, res) => {
       }
 
       if (type == uTypes.agent && adminName !== checkAdmin.name) {
-        throw data.authErrors.verifyFailed;
+        throw data.authErrors.adminMissing;
       }
 
       const checkUser = await userAuthModel.findOne({
@@ -219,6 +219,7 @@ module.exports.userLogin = async (req, res) => {
           res.status(200).cookie('authToken', token, options).json({
             success: true,
             message: data.authSuccess.userLogin,
+            detail: checkUser.uType,
             token,
           });
         } else {
@@ -266,7 +267,7 @@ module.exports.userLogout = (req, res) => {
 };
 
 module.exports.userVerify = async (req, res) => {
-  /** to verify agents by admin */ 
+  /** to verify agents by admin */
   const { verifyList } = req.body;
   try {
     if (req.myId && req.type === uTypes.admin) {
@@ -550,7 +551,7 @@ module.exports.custCreate = async (req, res) => {
 
         res.status(201).cookie('authToken', token, options).json({
           success: true,
-          message: data.authSuccess.userAdded,
+          message: data.authSuccess.custAdded,
           token,
         });
       }
@@ -581,19 +582,28 @@ module.exports.custAlert = async (req, res) => {
             status: uStatus.created,
           },
           (err, checkCust) => {
-            if (err) throw data.chatAlerts.noChats;
+            if (err) throw err;
 
-            let verifyList = checkCust.map((cust) => ({
-              custId: cust._id,
-              custUserName: cust.userName,
-            }));
-            res.status(200).json({
-              success: true,
-              message: data.chatAlerts.chatWaiting,
-              detail: {
-                verifyList,
-              },
-            });
+            if (checkCust.length === 0) {
+              res.status(404).json({
+                error: {
+                  code: data.common.notFound,
+                  detail: data.chatAlerts.noChats,
+                },
+              });
+            } else {
+              let verifyList = checkCust.map((cust) => ({
+                custId: cust._id,
+                custUserName: cust.userName,
+              }));
+              res.status(200).json({
+                success: true,
+                message: data.chatAlerts.chatWaiting,
+                detail: {
+                  verifyList,
+                },
+              });
+            }
           }
         );
       } else {
@@ -643,7 +653,7 @@ module.exports.custVerify = async (req, res, next) => {
       if (custUpdate) {
         req.body = {
           agentId: agentCheck._id,
-          agentName: agentCheck.userName,
+          agentName: agentCheck.name,
           custId: custUpdate._id,
           custUserName: custUpdate.userName,
           status: custUpdate.status,
@@ -665,9 +675,9 @@ module.exports.custVerify = async (req, res, next) => {
 };
 
 module.exports.userToken = async (req, res) => {
-  /** 
+  /**
    * keep checking if user is present in the system, else delete token.
-   * To be run every 60 seconds to force session to terminate if chat has ended.
+   * To be run every 10 seconds to force session to terminate if chat has ended.
    */
   try {
     let filterData = {
@@ -690,9 +700,9 @@ module.exports.userToken = async (req, res) => {
         req.status === uStatus.created &&
         checkUser.status === uStatus.active
       ) {
-        /** 
-         * customer chat request has been accepted by agent. 
-         * Customer is now active & verified. 
+        /**
+         * customer chat request has been accepted by agent.
+         * Customer is now active & verified.
          * Get chat details and create a socket between customer and agent
          */
         const chatDetails = await chatModel
@@ -700,11 +710,11 @@ module.exports.userToken = async (req, res) => {
             customerId: checkUser._id,
             customerName: checkUser.userName,
           })
-          .select('_id status resolution rating');
+          .select('_id');
 
         res.status(200).json({
           success: true,
-          message: data.authSuccess.userVerified,
+          message: data.authSuccess.custVerified,
           detail: chatDetails,
         });
       } else {
@@ -723,6 +733,22 @@ module.exports.userToken = async (req, res) => {
       error: {
         code: data.common.serverError,
         detail: err,
+      },
+    });
+  }
+};
+
+module.exports.custFetchId = async (req, res, next) => {
+  if (req.type === data.types.customer) {
+    req.body = {
+      custId: req.myId,
+    };
+    next();
+  } else {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        message: data.authErrors.invalidType,
       },
     });
   }
@@ -767,9 +793,9 @@ module.exports.custDelete = async (req, res) => {
 
 module.exports.inactiveCustomers = async (req, res, next) => {
   try {
-    /** 
+    /**
      * find customers 'created' over 5 mins ago and not active and mark them as deleted.
-     * frontend to display a message to them as 'No agent available' - when userToken API runs (if the user is still waiting) 
+     * frontend to display a message to them as 'No agent available' - when userToken API runs (if the user is still waiting)
      */
     const expiryTime = Math.floor(Date.now() / 1000);
     -300;
