@@ -10,7 +10,7 @@ const messageSchema = new Schema(
       type: String,
       required: true,
     },
-    reseverId: {
+    receiverId: {
       type: String,
       required: true,
     },
@@ -19,14 +19,14 @@ const messageSchema = new Schema(
         type: String,
         default: '',
       },
-      image: {
+      options: {
+        type: Object,
+        default: {},
+      },
+      responseType: {
         type: String,
         default: '',
       },
-    },
-    status: {
-      type: String,
-      default: 'unseen',
     },
   },
   { timestamps: true }

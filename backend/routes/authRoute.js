@@ -9,9 +9,18 @@ const {
   userChangePassword,
   userDelete,
   custCreate,
+  custAlert,
+  custVerify,
+  custFetchId,
   custDelete,
   userToken,
+  inactiveCustomers,
 } = require('../controller/authController');
+const {
+  addChat,
+  inactiveChat,
+  endChat,
+} = require('../controller/chatController');
 const {
   authMiddleware,
   authAdminCheck,
@@ -25,7 +34,12 @@ router.post('/user-verify', authMiddleware, userVerify);
 router.post('/user-change-password', authMiddleware, userChangePassword);
 router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
-router.post('/cust-delete', authMiddleware, custDelete);
-router.post('/token', authMiddleware, userToken);
+router.post('/cust-alert', authMiddleware, custAlert);
+router.post('/cust-verify', authMiddleware, custVerify, addChat);
+router.post('/cust-cancel', authMiddleware, custFetchId, custDelete);
+router.post('/cust-end-chat', authMiddleware, endChat, custDelete);
+router.post('/agent-end-chat', authMiddleware, endChat, custDelete);
+router.post('/inactive-cust', inactiveCustomers, inactiveChat);
+router.get('/token', authMiddleware, userToken);
 
 module.exports = router;

@@ -1,240 +1,164 @@
+/* eslint-disable no-console */
 const User = require('../models/authModel');
+const chatModel = require('../models/chatModel');
 const messageModel = require('../models/messageModel');
-const formidable = require('formidable');
-const fs = require('fs');
+const data = require('../data/messageStore');
 
-const getLastMessage = async (myId, fdId) => {
-  const msg = await messageModel
-    .findOne({
-      $or: [
-        {
-          $and: [
-            {
-              senderId: {
-                $eq: myId,
-              },
-            },
-            {
-              reseverId: {
-                $eq: fdId,
-              },
-            },
-          ],
-        },
-        {
-          $and: [
-            {
-              senderId: {
-                $eq: fdId,
-              },
-            },
-            {
-              reseverId: {
-                $eq: myId,
-              },
-            },
-          ],
-        },
-      ],
-    })
-    .sort({
-      updatedAt: -1,
-    });
-  return msg;
-};
-
-module.exports.getFriends = async (req, res) => {
-  const myId = req.myId;
-  let fnd_msg = [];
+module.exports.initiateMessage = async (req, res, next) => {
   try {
-    const friendGet = await User.find({
-      _id: {
-        $ne: myId,
-      },
-    });
-    for (let i = 0; i < friendGet.length; i++) {
-      let lmsg = await getLastMessage(myId, friendGet[i].id);
-      fnd_msg = [
-        ...fnd_msg,
-        {
-          fndInfo: friendGet[i],
-          msgInfo: lmsg,
-        },
-      ];
-    }
-
-    // const filter = friendGet.filter(d=>d.id !== myId );
-    res.status(200).json({ success: true, friends: fnd_msg });
-  } catch (error) {
-    res.status(500).json({
+    if (req.myId && req.type === data.types.agent) {
+      /**
+       * requester is an agent. Initiate first message to customer.
+       * This is connected to cust-verify by UI.
+       * UI will trigger initiateMessage
+       * UI will reinitate listChat as soon as success response contains initiated: true
+       */
+      const getAgent = await User.findOne({
+        _id: req.myId,
+        uType: data.types.agent,
+      });
+      if (getAgent && getAgent.status === data.status.active) {
+        const { chatId, firstMessage } = req.body;
+        if (chatId && firstMessage) {
+          const chatDetails = await chatModel.findOne({
+            _id: chatId,
+            status: data.chat.started,
+          });
+          const last_msg = await messageModel
+            .findOne({
+              $or: [
+                {
+                  senderId: req.myId,
+                  receiverId: chatDetails.customerId,
+                },
+                {
+                  receiverId: req.myId,
+                  senderId: chatDetails.customerId,
+                },
+              ],
+            })
+            .sort({
+              updatedAt: -1,
+            });
+          if (!chatDetails) throw data.chat.startFailed;
+          if (last_msg) throw data.chat.chatPresent;
+          req.body = {
+            senderName: getAgent.name,
+            chatId: chatDetails._id,
+            message: firstMessage.text,
+            options: firstMessage.expectedResponse,
+            responseType: firstMessage.responseType,
+            initiated: true,
+          };
+          next();
+        } else throw data.authErrors.invalidName;
+      } else throw data.authErrors.userNotFound;
+    } else throw data.authErrors.invalidType;
+  } catch (err) {
+    res.status(400).json({
       error: {
-        errorMessage: 'Internal Sever Error',
+        code: data.common.serverError,
+        message: err,
       },
     });
   }
 };
 
 module.exports.messageUploadDB = async (req, res) => {
-  const { senderName, reseverId, message } = req.body;
+  const { senderName, chatId, message, options, responseType, initiated } =
+    req.body;
   const senderId = req.myId;
 
   try {
-    const insertMessage = await messageModel.create({
-      senderId: senderId,
-      senderName: senderName,
-      reseverId: reseverId,
-      message: {
-        text: message,
-        image: '',
+    chatModel.findOne(
+      {
+        _id: chatId,
       },
-    });
-    res.status(201).json({
-      success: true,
-      message: insertMessage,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: {
-        errorMessage: 'Internal Sever Error',
-      },
-    });
-  }
-};
-module.exports.messageGet = async (req, res) => {
-  const myId = req.myId;
-  const fdId = req.params.id;
-
-  try {
-    let getAllMessage = await messageModel.find({
-      $or: [
-        {
-          $and: [
-            {
-              senderId: {
-                $eq: myId,
-              },
-            },
-            {
-              reseverId: {
-                $eq: fdId,
-              },
-            },
-          ],
-        },
-        {
-          $and: [
-            {
-              senderId: {
-                $eq: fdId,
-              },
-            },
-            {
-              reseverId: {
-                $eq: myId,
-              },
-            },
-          ],
-        },
-      ],
-    });
-
-    // getAllMessage = getAllMessage.filter(m=>m.senderId === myId && m.reseverId === fdId || m.reseverId ===  myId && m.senderId === fdId );
-
-    res.status(200).json({
-      success: true,
-      message: getAllMessage,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: {
-        errorMessage: 'Internal Server error',
-      },
-    });
-  }
-};
-
-module.exports.ImageMessageSend = (req, res) => {
-  const senderId = req.myId;
-  const form = formidable();
-
-  form.parse(req, (err, fields, files) => {
-    const { senderName, reseverId, imageName } = fields;
-
-    const newPath = __dirname + `../../../frontend/public/image/${imageName}`;
-    files.image.originalFilename = imageName;
-
-    try {
-      fs.copyFile(files.image.filepath, newPath, async (err) => {
-        if (err) {
-          res.status(500).json({
-            error: {
-              errorMessage: 'Image upload fail',
-            },
-          });
-        } else {
+      async (err, chat) => {
+        if (err) throw err;
+        else if (!chat) throw data.chatAlerts.noChats;
+        else {
+          console.log(chat);
+          const receiverId =
+            chat.agentId === senderId ? chat.customerId : chat.agentId;
           const insertMessage = await messageModel.create({
             senderId: senderId,
             senderName: senderName,
-            reseverId: reseverId,
+            receiverId: receiverId,
             message: {
-              text: '',
-              image: files.image.originalFilename,
+              text: message,
+              options: options,
+              responseType,
             },
           });
-          res.status(201).json({
-            success: true,
-            message: insertMessage,
-          });
+          if (insertMessage && insertMessage._id) {
+            res.status(200).json({
+              success: true,
+              message: data.msgSuccess.messageSent,
+              initiated: initiated ? initiated : false,
+            });
+          }
         }
-      });
-    } catch (error) {
-      res.status(500).json({
-        error: {
-          errorMessage: 'Internal Sever Error',
-        },
-      });
-    }
-  });
+      }
+    );
+  } catch (err) {
+    res.status(500).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
+    });
+  }
 };
 
-module.exports.messageSeen = async (req, res) => {
-  const messageId = req.body._id;
-
-  await messageModel
-    .findByIdAndUpdate(messageId, {
-      status: 'seen',
-    })
-    .then(() => {
-      res.status(200).json({
-        success: true,
-      });
-    })
-    .catch(() => {
-      res.status(500).json({
-        error: {
-          errorMessage: 'Internal Server Error',
-        },
-      });
+module.exports.messageGet = async (req, res) => {
+  const chatId = req.params.id;
+  /**
+   * this should trigger on socket.emit by either agent or customer
+   * belonging to the same socket when they successfully exec messageUploadDB
+   *  */
+  try {
+    chatModel.findById(chatId, async (err, docs) => {
+      if (err) throw err;
+      else {
+        messageModel
+          .find(
+            {
+              $or: [
+                {
+                  senderId: docs.agentId,
+                  receiverId: docs.customerId,
+                },
+                {
+                  senderId: docs.customerId,
+                  receiverId: docs.agentId,
+                },
+              ],
+            },
+            (warn, messageList) => {
+              if (warn) throw warn;
+              /**
+               * check if the last message is by the agent on the customer UI.
+               * If agent, then analyse the message and take appropriate action.
+               *  */
+              res.status(200).json({
+                success: true,
+                messageList: messageList,
+              });
+            }
+          )
+          .sort({
+            createdAt: 1,
+          })
+          .select('-senderId -receiverId');
+      }
     });
-};
-
-module.exports.delivaredMessage = async (req, res) => {
-  const messageId = req.body._id;
-
-  await messageModel
-    .findByIdAndUpdate(messageId, {
-      status: 'delivared',
-    })
-    .then(() => {
-      res.status(200).json({
-        success: true,
-      });
-    })
-    .catch(() => {
-      res.status(500).json({
-        error: {
-          errorMessage: 'Internal Server Error',
-        },
-      });
+  } catch (error) {
+    res.status(500).json({
+      error: {
+        code: data.common.serverError,
+        message: error,
+      },
     });
+  }
 };

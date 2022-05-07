@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet" integrity="sha512-Oy+sz5W86PK0ZIkawrG0iv7XwWhYecM3exvUtMKNJMekGFJtVAhibhRPTpmyTj8+lJCkmWfnpxKgT2OopquBHA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <title>Customer Support Chat</title>
+  </head>
+  <body class="bg-light">
+    <div class="container">
+      <header class="d-flex flex-wrap justify-content-center py-3 mb-4">
+        <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+          <span class="fs-5">Customer Support Center</span>
+        </a>
+        <ul class="nav nav-pills">
+          <li class="nav-item"><a href="/login" class="nav-link bg-success text-light">Login</a></li>
+        </ul>
+      </header>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <div class="container pt-5 pb-5">
+            <h5>Welcome to Live Customer Support for your ID</h5>
+            <p>Our current working timings are as follows:</p>
+            <dl class="row">
+              <dt class="col-sm-3">Hours</dt>
+              <dd class="col-sm-9">9:30 am to 5:30 pm</dd>
+              <dt class="col-sm-3">Days</dt>
+              <dd class="col-sm-9">Monday to Friday</dd>
+              <dt class="col-sm-3">Languages Supported</dt>
+              <dd class="col-sm-9">English</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="container pt-3 pb-4" class="form-signin">
+                <div class="modal fade" id="cancelChatModal" tabindex="-1" aria-labelledby="cancelChatModalLabel" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="cancelChatModalLabel">Cancel Chat Request</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Are you sure you want to cancel this request? You can always try connecting later.</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, I will wait</button>
+                        <button type="button" id="custCancel" class="btn btn-primary">Yes, please cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div id="waiting" class="d-none">
+                  <div class="pb-3 pt-3 ps-4 pe-4 border">
+                    <dl class="row">
+                      <dt class="col-sm-5">Your name</dt>
+                      <dd class="col-sm-7" id="customerName"></dd>
+                      <dt class="col-sm-5">Your Pincode</dt>
+                      <dd class="col-sm-7" id="customerPincode"></dd>
+                    </dl>
+                  </div>
+                  <div class="text-center mt-4">
+                    <div class="spinner-border text-info" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-4 mb-5 lead">Your details have been entered in our system.<br/> Please wait while we find an agent to connect with you</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cancelChatModal">Cancel Request</button>
+                  </div>
+                </div>
+                <div id="alreadyConnected" class="d-none">
+                  <p class="lead">It seems you are already connected to our agents from this browser. Please delete cookies and try again.</p>
+                </div>
+                <div id="busy" class="d-none">
+                  <p class="lead">All our agents are currently busy. We apologize for the inconvenience. Please try again after some time.</p>
+                </div>
+                <div id="error" class="d-none">
+                  <p class="lead alert alert-warning">It seems some error has occurred. Please try again after some time.</p>
+                </div>
+                <div id="logout" class="d-none">
+                  <p class="lead">Thank you for connecting with us. Please feel free to contact us again for any queries</p>
+                </div>
+                <form class="needs-validation" id="newCustomer" name="newCustomer" action="javascript:void(0);">
+                  <h1 class="h3 mt-4 mb-3 fw-normal">Please enter your details below</h1>
+                  <div class="alert alert-warning d-none" role="alert"></div>
+                  <div class="mb-3">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control border-0 border-bottom" id="name" name="name" placeholder="Eg: Ganesh Sharma" required>
+                    <div class="form-text">Please enter your name here</div>
+                    <div class="valid-feedback">
+                      Looks good!
+                    </div>
+                    <div class="invalid-feedback">
+                      No numbers or special characters allowed.
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="pincode">PINCODE</label>
+                    <input type="number" class="form-control border-0 border-bottom" id="pincode" name="pincode" placeholder="Eg: 400056" required>
+                    <div class="form-text">Please enter your valid 6 digit pincode here</div>
+                    <div class="valid-feedback">
+                      Looks good!
+                    </div>
+                    <div class="invalid-feedback">
+                      Invalid data. Please enter a valid Pincode.
+                    </div>
+                  </div>
+                  <button class="w-100 mt-5 btn btn-lg btn-primary" type="submit">Request Support</button>
+                </form>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <%- include('../controls/customer', {url: server_path, chatId: chatId}); %>
+  </body>
+</html>

@@ -33,8 +33,10 @@ const registerSchema = new Schema(
       required: false,
       default: false,
     },
+    createdAt: Number,
+    updatedAt: Number,
   },
-  { timestamps: true }
+  { timestamps: { currentTime: () => Math.floor(Date.now() / 1000) } }
 );
 
 module.exports = model('user', registerSchema);
