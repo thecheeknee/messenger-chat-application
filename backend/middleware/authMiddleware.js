@@ -18,7 +18,7 @@ module.exports.authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports.authChatCheck = async(req, res, next) => {
+module.exports.authChatCheck = async (req, res, next) => {
   const { authToken } = req.cookies;
   if (authToken) {
     const deCodeToken = await jwt.verify(authToken, process.env.SECRET);
@@ -30,7 +30,7 @@ module.exports.authChatCheck = async(req, res, next) => {
   } else {
     res.redirect('/logout');
   }
-}
+};
 
 module.exports.authAdminCheck = async (req, res, next) => {
   const { authToken } = req.cookies;

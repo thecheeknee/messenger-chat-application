@@ -43,7 +43,7 @@ module.exports.userRegister = async (req, res) => {
     res.status(400).json({
       error: {
         code: data.authErrors.invalidDetails,
-        detail: errorList
+        detail: errorList,
       },
     });
   } else {

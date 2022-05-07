@@ -12,7 +12,11 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const presetRoute = require('./routes/presetRoute');
 const messengerRoute = require('./routes/messengerRoute');
-const { authChatCheck, authMiddleware, authAdminCheck } = require('./middleware/authMiddleware');
+const {
+  authChatCheck,
+  authMiddleware,
+  authAdminCheck,
+} = require('./middleware/authMiddleware');
 
 dotenv.config({
   path: 'backend/config/config.env',
