@@ -23,7 +23,8 @@
               <div class="card-body d-none" id="error">
                 <div class="text-justify mt-4">
                   <p class="lead alert alert-danger">Some information was incorrect. Please check and try again</p>
-                  <a href="/agent-register" class="btn btn-warning">Try Again</a>
+                  <p class="alert alert-warning"></p>
+                  <a href="/account-register" class="btn btn-warning">Try Again</a>
                 </div>
               </div>
               <div class="card-body d-none" id="verifyPending">
@@ -34,13 +35,13 @@
               <div class="card-body d-none" id="adminMissing">
                 <div class="text-justify mt-4">
                   <p class="lead alert alert-danger">There is no admin account created! Please create an admin account first</p>
-                  <a href="/agent-register" class="btn btn-warning">Try Again with another email ID</a>
+                  <a href="/account-register" class="btn btn-warning">Create Admin Account</a>
                 </div>
               </div>
               <div class="card-body d-none" id="notFound">
                 <div class="text-justify mt-4">
                   <p class="lead alert alert-danger">There is already an account present with this email</p>
-                  <a href="/agent-register" class="btn btn-warning">Try Again with another email ID</a>
+                  <a href="/account-register" class="btn btn-warning">Try Again with another email ID</a>
                 </div>
               </div>
               <div class="card-body d-none" id="waiting">
@@ -52,32 +53,58 @@
                   <p>Checking your account details... Please wait</p>
                 </div>
               </div>
-              <div class="card-body" id="loginScreen">
+              <div class="card-body" id="register">
                 <form class="needs-validation" id="staffLogin" name="staffLogin" action="javascript:void(0);">
+                  <div class="mb-3">
+                    <label for="accUserName" class="form-label">User Name</label>
+                    <input type="text" class="form-control" id="accUserName" name="accUserName" aria-describedby="userNameHelp">
+                    <div id="userNameHelp" class="form-text">Please enter a unique user name for your account</div>
+                    <div class="invalid-feedback">
+                      Alphabets & Numbers only. No spaces!
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="accName" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="accName" name="accName" aria-describedby="nameHelp">
+                    <div id="nameHelp" class="form-text">Your name (as displayed to the customer)</div>
+                    <div class="invalid-feedback">
+                      Only alphabets and spaces allowed
+                    </div>
+                  </div>
                   <div class="mb-3">
                     <label for="accEmail" class="form-label">Email address</label>
                     <input type="email" class="form-control" id="accEmail" name="accEmail" aria-describedby="emailHelp" required>
                     <div id="emailHelp" class="form-text">Please enter your registered email ID</div>
                   </div>
                   <div class="mb-3">
-                    <label for="accPassword" class="form-label">Password</label>
-                    <input type="password" class="form-control" id="accPassword" name="accPassword" required>
-                  </div>
-                  <div class="mb-3">
-                    <label for="accType" class="form-label">Account Type</label>
-                    <select class="form-select" id="accType" name="accType" aria-label="Default select example" required>
+                    <label for="accRegType" class="form-label">Account Type</label>
+                    <select class="form-select" id="accRegType" name="accRegType" aria-label="Select account type" required>
                       <option disabled>- Choose -</option>
                       <option value="agent">Agent</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
-                  <div class="mb-3 d-none">
-                    <label for="adminUserName" class="form-label">Admin Name</label>
-                    <input type="text" class="form-control" id="adminUserName" name="adminUserName" aria-describedby="userNameHelp">
-                    <div id="userNameHelp" class="form-text">Please enter your Admin User Name for verification</div>
+                  <div class="mb-3">
+                    <label for="accPassword" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="accPassword" name="accPassword" required>
+                    <div class="invalid-feedback">
+                      Atleast 1 Capital, small case, numbers & special character(s) are required for a valid password
+                    </div>
                   </div>
                   <div class="mb-3">
-                    <button class="w-100 mt-2 btn btn-lg btn-primary" type="submit">Log in</button>
+                    <label for="accConfirmPassword" class="form-label">Re-type password</label>
+                    <input type="password" class="form-control" id="accConfirmPassword" name="accConfirmPassword" required>
+                    <div class="invalid-feedback">
+                      Password do not match!
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label for="adminUserName" class="form-label">Admin Name</label>
+                    <input type="text" class="form-control" id="adminUserName" name="adminUserName" aria-describedby="adminUserNameHelp" required>
+                    <div id="adminUserNameHelp" class="form-text">Please enter your Admin User Name for verification</div>
+                  </div>
+                  <div class="mb-3">
+                    <button class="w-100 mt-2 btn btn-lg btn-primary" type="submit">Create Account</button>
                   </div>
                 </form>
               </div>
@@ -86,7 +113,10 @@
                 <a href="/Login" class="btn btn-warning">Login</a>
               </div>
             </div>
-    
+          </div>
+        </div>
+      </div>
+    </section>    
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <%- include('../controls/account', {url: server_path}); %>

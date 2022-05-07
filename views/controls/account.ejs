@@ -43,12 +43,15 @@
                 notVerifiedScreen.classList.remove('d-none');
               }
               if (json.detail === 'admin') {
-                //redirect to admin dashboard
+                waitingScreen.classList.add('d-none');
+                setTimeout(() => {
+                  window.location.pathname = '/admin-dashboard';
+                }, 5000);
               }
             } else throw json;
           })
           .catch(err => {
-            const errorCode = err.error.code;
+            const errorCode = (err.error.code === 'internal_server_error') ? err.error.detail : err.error.code;
             waitingScreen.classList.add('d-none');
             switch (errorCode) {
               case 'admin_missing':
@@ -57,8 +60,11 @@
               case 'user_exists':
                 notFoundScreen.classList.remove('d-none');
                 break;
-              case 'password_invalid':
               case 'invalid_details':
+                errorScreen.querySelector('.alert-warning').innerHTML = err.error.detail.join('<br/>');
+                errorScreen.classList.remove('d-none');
+                break;
+              case 'type_invalid':
               default:
                 errorScreen.classList.remove('d-none');
                 break;
@@ -86,14 +92,16 @@
               waitingScreen.classList.add('d-none');
               if (json.detail === 'agent') {
                 // redirect to agent dashboard
+                window.location.pathname = '/agent-dashboard';
               }
               if (json.detail === 'admin') {
                 //redirect to admin dashboard
+                window.location.pathname = '/admin-dashboard';
               }
             } else throw json;
           })
           .catch(err => {
-            const errorCode = err.error.code;
+            const errorCode = (err.error.code === 'internal_server_error') ? err.error.detail : err.error.code;
             waitingScreen.classList.add('d-none');
             switch (errorCode) {
               case 'verification_failed':
@@ -129,16 +137,24 @@
         document.getElementById('accEmail').addEventListener('change', validate, false);
         document.getElementById('accType').addEventListener('change', validate, false);
         document.getElementById('adminUserName').addEventListener('change', validate, false);
-        document.getElementById('staffLogin').addEventListener('submit', staffLogin, false);
+        document.getElementById('staffLogin').addEventListener('submit', staffLoginAccount, false);
         clearCookies();
         break;
-      case 'agent-register':
-        loginScreen = document.getElementById('loginScreen');
+      case 'account-register':
+        loginScreen = document.getElementById('register');
         waitingScreen = document.getElementById('waiting');
         errorScreen = document.getElementById('error');
         notVerifiedScreen = document.getElementById('verifyPending');
         adminMissingScreen = document.getElementById('adminMissing');
         notFoundScreen = document.getElementById('notFound');
+        document.getElementById('accUserName').addEventListener('change', validate, false);
+        document.getElementById('accName').addEventListener('change', validate, false);
+        document.getElementById('accEmail').addEventListener('change', validate, false);
+        document.getElementById('accRegType').addEventListener('change', validate, false);
+        document.getElementById('accPassword').addEventListener('change', validate, false);
+        document.getElementById('accConfirmPassword').addEventListener('change', validate, false);
+        document.getElementById('adminUserName').addEventListener('change', validate, false);
+        document.getElementById('staffLogin').addEventListener('submit', staffRegisterNew, false);
         clearCookies();
         break;
       case 'logout':
@@ -158,9 +174,27 @@
     const key = e.target;
     const value = e.target.value;
     switch (key.id) {
+      case 'accUserName':
+        if (!/^[a-zA-Z0-9]{6,20}$/.test(value)) key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
+      case 'accName':
+        if (!/^[a-zA-Z ]{6,30}$/.test(value)) key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
       case 'accEmail':
         if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)) key.classList.add('is-invalid');
         else key.classList.remove('is-invalid');
+        break;
+      case 'accRegType':
+        if (value === 'admin') {
+          document.getElementById('adminUserName').removeAttribute('required');
+          document.getElementById('adminUserName').value = '';
+          document.getElementById('adminUserName').parentNode.classList.add('d-none');
+        } else {
+          document.getElementById('adminUserName').setAttribute('required', true);
+          document.getElementById('adminUserName').parentNode.classList.remove('d-none');
+        }
         break;
       case 'accType':
         if (value === 'admin') {
@@ -172,14 +206,27 @@
           document.getElementById('adminUserName').parentNode.classList.add('d-none');
         }
         break;
+      case 'accOldPassword':
+        if (value ==='') key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
+      case 'accPassword':
+        if (!(/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(value))) key.classList.add('is-invalid');
+        else key.classList.remove('is-invalid');
+        break;
+      case 'accConfirmPassword':
+        if (/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(value) && value === document.getElementById('accPassword').value) key.classList.remove('is-invalid');
+        else key.classList.add('is-invalid');
+        break;
       case 'adminUserName':
         if (value === '') key.classList.add('is-invalid');
         else key.classList.remove('is-invalid');
         break;
     }
+
   }
 
-  function staffLogin (e) {
+  function staffLoginAccount (e) {
     if (e.target.checkValidity() && document.querySelectorAll('.is-invalid').length === 0) {
       e.preventDefault();
       e.stopPropagation();
@@ -195,5 +242,26 @@
       const acc = new Account();
       acc.loginToDashboard(email, password, type, userName);
     } else return false;
+  }
+
+  function staffRegisterNew (e) {
+    if (e.target.checkValidity() && document.querySelectorAll('.is-invalid').length === 0) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const userName = document.getElementById('accUserName').value;
+      const name = document.getElementById('accName').value;
+      const email = document.getElementById('accEmail').value;
+      const type = document.getElementById('accRegType').value;
+      const password = document.getElementById('accPassword').value;
+      const confirmPassword = document.getElementById('accConfirmPassword').value;
+      const adminName = document.getElementById('adminUserName').value;
+
+      loginScreen.classList.add('d-none');
+      waitingScreen.classList.remove('d-none');
+
+      const acc = new Account();
+      acc.registerNewAccount (userName, name, email, type, password, confirmPassword, adminName);
+    }
   }
 </script>

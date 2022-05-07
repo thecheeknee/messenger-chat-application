@@ -13,22 +13,22 @@ module.exports.userRegister = async (req, res) => {
   /** for registering new agents / admin if admin not present */
   const { userName, name, email, type, password, confirmPassword, adminName } =
     req.body;
-  const error = [];
+  const errorList = [];
 
   if (!type || type === uTypes.customer) {
     throw data.authErrors.invalidType;
   }
 
   if (!userName || userName.length < 6 || userName.indexOf(' ') !== -1) {
-    error.push(data.authErrors.invalidUName);
+    errorList.push(data.authErrors.invalidUName);
   }
 
   if (!name || /\d/.test(name)) {
-    error.push(data.authErrors.invalidName);
+    errorList.push(data.authErrors.invalidName);
   }
 
   if (!email || !validator.isEmail(email)) {
-    error.push(data.authErrors.invalidEmail);
+    errorList.push(data.authErrors.invalidEmail);
   }
 
   if (
@@ -36,13 +36,14 @@ module.exports.userRegister = async (req, res) => {
     !confirmPassword ||
     (password !== confirmPassword && password.length < 6)
   ) {
-    error.push(data.authErrors.invalidPassword);
+    errorList.push(data.authErrors.invalidPassword);
   }
 
-  if (error.length > 0) {
+  if (errorList.length > 0) {
     res.status(400).json({
       error: {
-        code: error,
+        code: data.authErrors.invalidDetails,
+        detail: errorList
       },
     });
   } else {
