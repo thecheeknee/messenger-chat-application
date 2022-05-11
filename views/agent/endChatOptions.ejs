@@ -1,0 +1,124 @@
+<div class="modal fade" id="successfulClosureModal" aria-hidden="true" aria-labelledby="successfulClosureModalLabel" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="successfulClosureModalLabel">Successfully Resolved</h5>
+      </div>
+      <div class="modal-body">
+        <p class="alert alert-warning d-none">Please select one of the options below to help us understand the resolution</p>
+        <div class="row">
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="successfulClosureOptions" id="successfulClosure1" autocomplete="off" value="Provided eID after verifying details">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="successfulClosure1">
+                <i class="bi bi-hand-thumbs-up-fill"></i>
+                <p>Provided eID after verifying details</p>
+              </label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="successfulClosureOptions" id="successfulClosure2" autocomplete="off" value="Requested Customer to contact nearest office with template response">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="successfulClosure2">
+                <i class="bi bi-handbag-fill"></i>
+                <p>Requested Customer to contact nearest office with template response</p>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="successfulClosureBtn" data-parent="successfulClosureModal" class="btn btn-primary end-chat-btn">End Chat</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--not responsive modal-->
+<div class="modal fade" id="customerNotResponsiveModal" aria-hidden="true" aria-labelledby="customerNotResponsiveModalLabel" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="customerNotResponsiveModalLabel">Customer Inactive</h5>
+      </div>
+      <div class="modal-body">
+        <p>Do you want to wait for some time instead? The customer may be facing a network issue</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Ok I will wait</button>
+        <button id="customerNotResponsiveBtn" data-parent="customerNotResponsiveModal" class="btn btn-primary end-chat-btn">No, End Chat</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--customer ended modal-->
+<div class="modal fade" id="customerEndedModal" aria-hidden="true" aria-labelledby="customerEndedModalLabel" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="customerEndedModalLabel">Customer Ended Chat</h5>
+      </div>
+      <div class="modal-body">
+        <p class="alert alert-warning d-none">Please select one of the options below to help us understand the resolution</p>
+        <div class="row">
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="customerEndedOptions" id="customerEnded1" autocomplete="off" value="Resolution was provided before the customer ended the chat">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="customerEnded1">
+                <i class="bi bi-hand-thumbs-up-fill"></i>
+                <p>Resolution was provided before the customer ended the chat</p>
+              </label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="customerEndedOptions" id="customerEnded2" autocomplete="off" value="Resolution was not provided">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="customerEnded2">
+                <i class="bi bi-hand-thumbs-down-fill"></i>
+                <p>Resolution was not provided</p>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="customerEndedBtn" data-parent="customerEndedModal" class="btn btn-primary end-chat-btn">End Chat</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--fake chat modal-->
+<div class="modal fade" id="fakeRequestModal" aria-hidden="true" aria-labelledby="fakeRequestModalLabel" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="fakeRequestModalLabel">Fake Request</h5>
+      </div>
+      <div class="modal-body">
+        <p class="alert alert-warning d-none">Please select one of the options below to help us understand the resolution</p>
+        <div class="row">
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="fakeRequestOptions" id="fakeRequest1" autocomplete="off" value="This does not appear to be a real person">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="fakeRequest1">
+                <i class="bi bi-robot"></i>
+                <p>This does not appear to be a real person</p>
+              </label>
+            </div>
+          </div>
+          <div class="col">
+            <div class="w-100">
+              <input class="btn-check" type="radio" name="fakeRequestOptions" id="fakeRequest2" autocomplete="off" value="This is a real person but does not have a valid issue">
+              <label class="btn btn-secondary justify-content-between align-items-center" for="fakeRequest2">
+                <i class="bi bi-person-x-fill"></i>
+                <p>This is a real person but does not have a valid issue</p>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="fakeRequestBtn" data-parent="fakeRequestModal" class="btn btn-primary end-chat-btn">End Chat</button>
+      </div>
+    </div>
+  </div>
+</div>

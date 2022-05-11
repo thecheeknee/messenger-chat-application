@@ -221,6 +221,7 @@ module.exports.userLogin = async (req, res) => {
             success: true,
             message: data.authSuccess.userLogin,
             detail: checkUser.uType,
+            info: checkUser.userName,
             token,
           });
         } else {

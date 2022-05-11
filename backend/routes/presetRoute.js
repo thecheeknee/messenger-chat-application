@@ -5,9 +5,12 @@ const {
   savePreset,
   deletePreset,
 } = require('../controller/presetController');
-const { authAdminCheck } = require('../middleware/authMiddleware');
+const {
+  authAdminCheck,
+  authMiddleware,
+} = require('../middleware/authMiddleware');
 
-router.post('/get-presets', getPresets);
+router.post('/get-presets', authMiddleware, getPresets);
 router.post('/save-tag', authAdminCheck, savePreset);
 router.post('/delete-tag', authAdminCheck, deletePreset);
 

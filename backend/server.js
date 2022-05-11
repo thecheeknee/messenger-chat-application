@@ -29,6 +29,7 @@ app.use('/api/messenger', authRoute);
 app.use('/api/messenger', chatRoute);
 app.use('/api/messenger', presetRoute);
 app.use('/api/messenger', messengerRoute);
+app.use(express.static('static'));
 
 const PORT = process.env.PORT || 5000;
 app.get('/', (req, res) => {
@@ -62,7 +63,12 @@ app.get('/admin-dashboard', authAdminCheck, (req, res) => {
 });
 
 app.get('/agent-dashboard', authMiddleware, (req, res) => {
-  res.render('agent/dashboard', { server_path: process.env.SERVER_URL });
+  const { userName, name } = req;
+  res.render('agent/dashboard', {
+    server_path: process.env.SERVER_URL,
+    userName: userName,
+    name: name,
+  });
 });
 
 databaseConnect();

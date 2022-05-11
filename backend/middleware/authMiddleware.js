@@ -8,6 +8,10 @@ module.exports.authMiddleware = async (req, res, next) => {
     req.type = deCodeToken.type;
     req.verified = deCodeToken.verified;
     req.status = deCodeToken.status;
+    if (deCodeToken.type === 'agent') {
+      req.userName = deCodeToken.userName;
+      req.name = deCodeToken.name;
+    }
     next();
   } else {
     res.status(400).json({

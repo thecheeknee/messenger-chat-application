@@ -1,0 +1,26 @@
+#messagesBlock {
+  height: 600px;
+  max-height: 70vh;
+  overflow: auto;
+  position: relative;
+}
+#chatRoom {
+  min-height: 200px;
+  height: 600px;
+  max-height: 50vh;
+  overflow: auto;
+  position: relative;
+}
+.msg-wrapper {
+  width: auto;
+  max-width: 80%;
+  clear: both;
+}
+.agent-message .msg-wrapper {
+  text-align: left;
+  background-color: #ccc;
+}
+.cust-message .msg-wrapper {
+  text-align: left;
+  background-color: #ccc;
+}

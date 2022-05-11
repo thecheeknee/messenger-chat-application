@@ -1,0 +1,65 @@
+<div class="col-md-8 col-sm-12">
+  <div class="row">
+    <div class="col-md-4 col-sm-12">
+      <div class="w-100">
+        <div class="list-group" id="activeChats">
+          <a href="#" class="list-group-item d-flex justify-content-between align-items-start list-group-item-action active" aria-current="true">
+            <div class="ms-2 me-auto">
+              <div class="fw-bold">Chat name</div>
+              Waiting since
+            </div>
+            <span class="badge bg-primary rounded-pill">14</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-8 col-lg-7 col-md-8 col-sm-12">
+      <div class="w-100 chat-window bg-light rounded">
+        <div class="card" id="chatWindow">
+          <div class="card-header d-flex justify-content-between align-items-center p-3">
+            <h5 class="mb-0">Current Chat</h5>
+            <%- include('endChatOptions') %>
+            <div class="btn-group">
+              <button type="button" disabled id="endChat" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                End Chat
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#successfulClosureModal" href="#!">Successfully ended</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#customerNotResponsiveModal" href="#!">Customer Not Responsive</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#customerEndedModal" href="#!">Customer Ended chat</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#fakeRequestModal" href="#!">Fake Request</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="card-body d-none" id="errorMessage">
+            
+          </div>
+          <div class="card-body d-none" id="logoutFail">
+            <p class="alert alert-success">There was some error in logging out. We have terminated your session. Please login again later.</p>
+          </div>
+          <div class="card-body d-none" id="logoutSuccess">
+            <p class="alert alert-success">Thank you! You have logged out successfully</p>
+          </div>
+          <div class="card-body d-none" id="chatRoom" data-mdb-perfect-scrollbar="true"></div>
+          <div class="card-footer text-muted justify-content-start p-3">
+            <form class="needs-validation" id="chatForm" name="chatForm" action="javascript:void(0);" disabled>
+              <div class="input-group mb-3">
+                <textarea class="form-control" disabled id="messageText" placeholder="Your message" required aria-label="Your message" aria-describedby="basic-addon2"></textarea>
+                <div class="input-group-append">
+                  <button class="btn btn-outline-secondary" disabled type="submit">Send</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <div id="chatMessageInfo">
+                  <strong>expected response: Text</strong>
+                  <p></p>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

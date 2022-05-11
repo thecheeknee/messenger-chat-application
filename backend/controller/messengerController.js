@@ -143,6 +143,7 @@ module.exports.messageGet = async (req, res) => {
                *  */
               res.status(200).json({
                 success: true,
+                status: docs.status,
                 messageList: messageList,
               });
             }

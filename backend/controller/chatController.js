@@ -139,6 +139,7 @@ module.exports.endChat = async (req, res, next) => {
         chatDetails = {
           status: data.chat.ended,
           resolution,
+          endTime: new Date(),
         };
       }
     } else {
@@ -155,7 +156,6 @@ module.exports.endChat = async (req, res, next) => {
       },
       (err, chatEnded) => {
         if (err) throw err;
-        console.log(chatEnded);
         if (chatEnded) {
           /** send custId for deletion */
           req.body = {
@@ -189,9 +189,7 @@ module.exports.listChat = async (req, res) => {
         message: data.chat.foundChats,
         detail: findChats,
       });
-    } else {
-      throw data.chat.notFound;
-    }
+    } else throw data.chat.notFound;
   } catch (err) {
     res.status(400).json({
       error: {

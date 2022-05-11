@@ -32,7 +32,7 @@ module.exports.getPresets = async (req, res) => {
 
 module.exports.savePreset = async (req, res) => {
   try {
-    const { tag, message, type, responseData } = req.body;
+    const { tag, message, type, responseData, sequence } = req.body;
     if (!tag || tag === '' || !message || message === '') {
       throw data.msgErrors.presetInvalid;
     }
@@ -44,10 +44,14 @@ module.exports.savePreset = async (req, res) => {
         message: message,
         responseType: type,
         expectedResponse: responseData,
+        sequence: sequence,
       },
       {
         new: true,
-        upsert: true /** Make this update into an upsert */,
+        upsert: true,
+        sort: {
+          sequence: 1,
+        },
       }
     );
 
