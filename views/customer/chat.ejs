@@ -26,20 +26,34 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
-                    <p>We hope we have resolved your issue. Please rate this chat before closing!</p>
+                    <p>We hope we have resolved your issue. Please choose your chat experience before closing!</p>
                     <div class="d-flex flex-row">
+                      <div class="p-2">
+                        <input type="radio" class="btn-check" name="rating" id="notSatisfied" autocomplete="off">
+                        <label class="btn btn-secondary" for="notSatisfied">
+                          <i class="bi bi-emoji-frown-fill"></i>
+                          Not Satisfied
+                        </label>
+                      </div>
+                      <div class="p-2">
+                        <input type="radio" class="btn-check" name="rating" id="satisfied" autocomplete="off">
+                        <label class="btn btn-secondary" for="satisfied">
+                          <i class="bi bi-emoji-neutral-fill"></i>
+                          Satisfied
+                        </label>
+                      </div>
                       <div class="p-2">
                         <input type="radio" class="btn-check" name="rating" id="good" autocomplete="off">
                         <label class="btn btn-secondary" for="good">
-                          <i class="bi bi-hand-thumbs-up-fill"></i>
+                          <i class="bi bi-emoji-smile-fill"></i>
                           Good
                         </label>
                       </div>
                       <div class="p-2">
-                        <input type="radio" class="btn-check" name="rating" id="bad" autocomplete="off">
-                        <label class="btn btn-secondary" for="bad">
-                          <i class="bi bi-hand-thumbs-down-fill"></i>
-                          Bad
+                        <input type="radio" class="btn-check" name="rating" id="excellent" autocomplete="off">
+                        <label class="btn btn-secondary" for="excellent">
+                          <i class="bi bi-emoji-laughing"></i>
+                          Excellent
                         </label>
                       </div>
                     </div>
@@ -72,10 +86,10 @@
                 </div>
               </div>
               <div class="card-body d-none" id="messagesBlock" data-mdb-perfect-scrollbar="true"></div>
-              <div class="card-footer text-muted justify-content-start p-3">
+              <div class="card-footer bg-dark text-muted justify-content-start p-3">
                 <form class="needs-validation d-none" id="chatForm" name="chatForm" action="javascript:void(0);">
                   <div class="mb-3">
-                    <input class="form-control" id="messageText" />
+                    <input class="form-control" placeholder="press enter to send" id="messageText" />
                   </div>
                 </form>
               </div>

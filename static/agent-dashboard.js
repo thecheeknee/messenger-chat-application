@@ -107,9 +107,9 @@ class Dashboard {
           } else throw json.error;
         })
         .catch((error) => {
-          console.log(error);
           chatListScreen.innerHTML += `<div class="list-group-item">
             <p class="p-2 border-bottom alert alert-warning">No Pending Chats</p>
+            <span class="d-none">${error}</span>
           </div>`;
         });
     } catch (err) {
@@ -164,7 +164,7 @@ class Dashboard {
       return `
         <div class="d-flex flex-row justify-content-end mb-4 pt-1 message-blob agent-message">
           <div class="bg-primary rounded ps-2 pe-2 pb-1 msg-wrapper">
-            <p class="small pt-2 ps-2 mb-0 text-light fw-bold">${sender}</p>
+            <p class="small pt-2 ps-2 mb-0 text-light fw-bold">You</p>
             <p class="small p-2 me-3 mb-1 text-white">${messageData.text}</p>
           </div>
         </div>
@@ -193,7 +193,7 @@ class Dashboard {
           <div class="fw-bold">${chatDetails.customerName}</div>
           <small>Started ${timeCheck(activeSince)} ago</small>
         </div>
-        <span class="badge bg-primary rounded-pill">14</span>
+        <span class="badge bg-primary rounded-pill d-none">14</span>
       </a>
       `;
     } else {
@@ -212,7 +212,7 @@ class Dashboard {
           <div class="fw-bold">${chatDetails.customerName}</div>
           <small>Inactive ${timeCheck(inactiveSince)} ago</small>
         </div>
-        <span class="badge bg-primary rounded-pill">14</span>
+        <span class="badge bg-primary rounded-pill d-none">14</span>
       </a>
       `;
     }
@@ -275,7 +275,7 @@ class Dashboard {
             for (let msg in json.messageList) {
               const message = json.messageList[msg].message;
               const sender = json.messageList[msg].senderName;
-              if (agentName === sender) {
+              if (userName === sender) {
                 chatWindow.innerHTML += this.processMessage(
                   sender,
                   'agent',
@@ -459,6 +459,11 @@ function timeCheck(diff) {
 
 function getChat(obj) {
   const chatId = obj.getAttribute('data-chat-id');
+  const activeChatTag = document.querySelector('.chat-tag.active');
+  if (activeChatTag && activeChatTag !== obj) {
+    activeChatTag.classList.remove('active');
+  }
+  obj.classList.add('active');
   const dashboard = new Dashboard(apiUrl);
   dashboard.getChatMessages(chatId);
 }
@@ -478,10 +483,7 @@ function addTemplateMessage(e) {
     const tagResponse = e.target.getAttribute('data-response');
     chatInput.querySelector('#chatMessageInfo p').innerHTML = '';
 
-    chatInput.querySelector('#messageText').value =
-      chatWindow.querySelectorAll('.message-blob').length === 0
-        ? tagMessage.replace('AGENT_NAME', agentName)
-        : tagMessage;
+    chatInput.querySelector('#messageText').value = tagMessage;
     if (tagResponse === 'Options') {
       for (let opt in tagOptions) {
         chatInput.querySelector(
@@ -493,7 +495,7 @@ function addTemplateMessage(e) {
     chatInput.querySelector('#chatMessageInfo strong').innerText =
       'response type: ' + tagResponse;
     messageJson = {
-      senderName: agentName,
+      senderName: userName,
       chatId: activeChatId,
       message: tagMessage,
       options: tagOptions,
@@ -510,7 +512,7 @@ function sendMessage(e) {
     ) {
       if (messageJson === null || messageJson === undefined) {
         messageJson = {
-          senderName: agentName,
+          senderName: userName,
           chatId: activeChatId,
           message: document.getElementById('messageText').value,
           options: {},
@@ -542,20 +544,6 @@ function endChatByAgent(e) {
     endBlock.querySelector('.alert-warning')?.classList.add('d-none');
     let resolution = '';
     switch (endBlock.id) {
-      case 'successfulClosureModal':
-        if (
-          document.querySelector(
-            'input[name="successfulClosureOptions"]:checked'
-          )
-        ) {
-          resolution = document.querySelector(
-            'input[name="successfulClosureOptions"]:checked'
-          ).value;
-          myModal.hide();
-        } else {
-          endBlock.querySelector('.alert-warning').classList.remove('d-none');
-        }
-        break;
       case 'customerNotResponsiveModal':
         resolution = 'Customer not responsive';
         myModal.hide();

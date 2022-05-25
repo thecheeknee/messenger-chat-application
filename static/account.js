@@ -150,6 +150,32 @@ class Account {
     }
   }
 
+  updateMyDetails(userDetails) {
+    try {
+      const userUpdate = this._fetchApi(
+        '/update-my-details',
+        this._post,
+        userDetails
+      );
+
+      userUpdate
+        .then((json) => {
+          if (json.success) {
+            document.getElementById('agentActionSuccess').innerText =
+              'Details updated successfully.';
+            document
+              .getElementById('agentActionSuccess')
+              .classList.remove('d-none');
+          } else throw json;
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
   logoutAccount() {
     try {
       const loginCheck = this._fetchApi('/user-logout', this._post, {});
@@ -173,6 +199,7 @@ class Account {
 
     clearCookies();
     setTimeout(() => {
+      window.location.hash = '';
       window.location.pathname = '/login';
     }, 5000);
   }
@@ -234,12 +261,41 @@ class Account {
         .addEventListener('submit', staffRegisterNew, false);
       clearCookies();
       break;
+    case 'personal-info':
+      document
+        .getElementById('accountUpdateForm')
+        .addEventListener('submit', updatePersonalDetails, false);
+      document
+        .getElementById('backToDashboard')
+        .addEventListener('click', goToDashboard, false);
+      document
+        .getElementById('accName')
+        .addEventListener('change', validate, false);
+      document
+        .getElementById('accEmail')
+        .addEventListener('change', validate, false);
+      document
+        .getElementById('accPassword')
+        .addEventListener('change', validate, false);
+      document
+        .getElementById('accPassword')
+        .addEventListener('change', validate, false);
+      document
+        .getElementById('accConfirmPassword')
+        .addEventListener('change', validate, false);
+      document
+        .getElementById('logoutAccount')
+        .addEventListener('click', startLogout, false);
+      break;
     case 'agent-dashboard':
     case 'admin-dashboard':
       errorScreen = document.getElementById('errorMessage');
       chatWindow = document.getElementById('chatRoom');
       logoutSuccess = document.getElementById('logoutSuccess');
       logoutFail = document.getElementById('logoutFail');
+      document
+        .getElementById('personalDetails')
+        .addEventListener('click', showPersonalDetails, false);
       document
         .getElementById('logoutAccount')
         .addEventListener('click', startLogout, false);
@@ -308,7 +364,19 @@ function validate(e) {
     case 'accPassword':
       if (!/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(value))
         key.classList.add('is-invalid');
-      else key.classList.remove('is-invalid');
+      else {
+        key.classList.remove('is-invalid');
+      }
+      if (value != '' && document.getElementById('passwordChangeAlert')) {
+        document
+          .getElementById('passwordChangeAlert')
+          .classList.remove('d-none');
+      } else if (
+        value === '' &&
+        document.getElementById('passwordChangeAlert')
+      ) {
+        document.getElementById('passwordChangeAlert').classList.add('d-none');
+      }
       break;
     case 'accConfirmPassword':
       if (
@@ -378,13 +446,80 @@ function staffRegisterNew(e) {
   }
 }
 
-function startLogout(e) {
-  var activeChats = new bootstrap.Modal(document.getElementById('logoutModal'));
+function showPersonalDetails() {
+  window.location.hash = '';
+  window.location.pathname = '/personal-info';
+}
+
+function updatePersonalDetails(e) {
+  document.getElementById('agentActionFailure').classList.add('d-none');
+  // if user enters new password, then check for new password and confirm password
   if (
-    document.getElementById('activeChats').querySelectorAll('li').length > 0
+    e.target.checkValidity() &&
+    document.querySelectorAll('.is-invalid').length === 0
   ) {
-    activeChats.show();
-    return false;
+    e.preventDefault();
+    e.stopPropagation();
+
+    let updatedDetails;
+    if (
+      document.getElementById('accName').value != accountDetails.name ||
+      document.getElementById('accEmail').value != accountDetails.email
+    ) {
+      // name or email ID has been changed
+      updatedDetails = {
+        name: document.getElementById('accName').value,
+        email: document.getElementById('accEmail').value,
+        password: document.getElementById('accOldPassword').value,
+      };
+    }
+
+    const newPassword = document.getElementById('accPassword').value;
+    const confirmPassword = document.getElementById('accConfirmPassword').value;
+
+    if (
+      newPassword &&
+      confirmPassword &&
+      newPassword === confirmPassword &&
+      newPassword.length > 6
+    ) {
+      updatedDetails = {
+        password: document.getElementById('accOldPassword').value,
+        newPassword,
+        confirmPassword,
+      };
+    }
+
+    if (updatedDetails) {
+      const acc = new Account(apiUrl);
+      acc.updateMyDetails(updatedDetails);
+    } else {
+      document.getElementById('agentActionFailure').innerText =
+        'No changes found.';
+      document.getElementById('agentActionFailure').classList.remove('d-none');
+    }
+  }
+}
+
+function goToDashboard(e) {
+  const type = e.target.getAttribute('data-type');
+  const redirection =
+    type === 'admin' ? '/admin-dashboard' : '/agent-dashboard';
+  window.location.pathname = redirection;
+}
+
+function startLogout(e) {
+  const pathname = window.location.pathname.split('/')[1];
+  if (pathname === 'agent-dashboard') {
+    var activeChats = new bootstrap.Modal(
+      document.getElementById('logoutModal')
+    );
+    if (
+      document.getElementById('activeChats').querySelectorAll('li').length > 0
+    ) {
+      activeChats.show();
+      return false;
+    }
   }
   const acc = new Account(apiUrl);
   acc.logoutAccount();

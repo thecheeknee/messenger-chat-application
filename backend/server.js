@@ -12,6 +12,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const presetRoute = require('./routes/presetRoute');
 const messengerRoute = require('./routes/messengerRoute');
+const { userFetchEmail } = require('./controller/authController');
 const {
   authChatCheck,
   authMiddleware,
@@ -59,15 +60,34 @@ app.get('/account-register', (req, res) => {
 });
 
 app.get('/admin-dashboard', authAdminCheck, (req, res) => {
-  res.render('admin/dashboard', { server_path: process.env.SERVER_URL });
+  const { userName, name, type } = req;
+  res.render('admin/dashboard', {
+    server_path: process.env.SERVER_URL,
+    userName: userName,
+    name: name,
+    accType: type,
+  });
 });
 
 app.get('/agent-dashboard', authMiddleware, (req, res) => {
-  const { userName, name } = req;
+  const { userName, name, type } = req;
   res.render('agent/dashboard', {
     server_path: process.env.SERVER_URL,
     userName: userName,
     name: name,
+    accType: type,
+  });
+});
+
+app.get('/personal-info', authMiddleware, userFetchEmail, (req, res) => {
+  const { myId, userName, name, type, emailId } = req;
+  res.render('common/password', {
+    server_path: process.env.SERVER_URL,
+    agentId: myId,
+    userName: userName,
+    name: name,
+    accType: type,
+    email: emailId,
   });
 });
 

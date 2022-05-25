@@ -6,7 +6,7 @@ const data = require('../data/messageStore');
 module.exports.addChat = async (req, res) => {
   /** create a chat with agent, customer, status as approved, resolution as empty, start time as current time, end time as null */
   try {
-    const { agentId, agentName, custId, custUserName, status, verified } =
+    const { agentId, agentUserName, custId, custUserName, status, verified } =
       req.body;
     const chatPresent = await chatModel.findOne({
       customerId: custId,
@@ -19,11 +19,11 @@ module.exports.addChat = async (req, res) => {
       if (status === data.status.active && verified) {
         const chatCreate = await chatModel.create({
           agentId: agentId,
-          agentName: agentName,
+          agentName: agentUserName,
           customerId: custId,
           customerName: custUserName,
           status: data.chat.started,
-          rating: 0,
+          rating: '',
           resolution: '',
           chatEndedBy: '',
           startTime: new Date(),
@@ -55,7 +55,8 @@ module.exports.rateChat = async (req, res) => {
     try {
       const { rating } = req.body;
       if (!rating || /\d/.test(rating)) throw data.chat.ratingMissing;
-      if (rating === data.rating.good || rating === data.rating.bad) {
+      const ratingArray = Object.keys(data.rating);
+      if (ratingArray.includes(rating)) {
         const rateUpdate = await chatModel.findOneAndUpdate(
           {
             customerId: req.myId,
@@ -175,7 +176,7 @@ module.exports.endChat = async (req, res, next) => {
   }
 };
 
-module.exports.listChat = async (req, res) => {
+module.exports.listChat = async (req, res, next) => {
   try {
     const { status } = req.body;
     const agentId = req.type === data.types.admin ? req.body.agentId : req.myId;
@@ -184,11 +185,22 @@ module.exports.listChat = async (req, res) => {
       status: status,
     });
     if (findChats && findChats.length > 0) {
-      res.status(200).json({
-        success: true,
-        message: data.chat.foundChats,
-        detail: findChats,
-      });
+      if (req.type === data.types.admin && status === data.chat.ended) {
+        req.body = {
+          agentId: agentId,
+          status: status,
+          totalChatCount: findChats.length,
+          chatList: findChats,
+        };
+        next();
+      } else {
+        res.status(200).json({
+          success: true,
+          message: data.chat.foundChats,
+          totalChatCount: findChats.length,
+          detail: findChats,
+        });
+      }
     } else throw data.chat.notFound;
   } catch (err) {
     res.status(400).json({
@@ -250,6 +262,29 @@ module.exports.inactiveChat = async (req, res) => {
       error: {
         code: data.common.serverError,
         detail: err,
+      },
+    });
+  }
+};
+
+module.exports.deleteChat = async (req, res, next) => {
+  try {
+    const { chatId } = req.body;
+    chatModel.findById(chatId, (errC, chatData) => {
+      if (errC) throw errC;
+      chatModel.deleteOne({ _id: chatId }, (err, deleteData) => {
+        if (err) throw err;
+        req.body.customerId = chatData.customerId;
+        req.body.chatsDeleted = deleteData.deleteCount;
+        next();
+      });
+    });
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+        info: req.body,
       },
     });
   }

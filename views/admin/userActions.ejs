@@ -1,0 +1,61 @@
+<div class="modal" id="verifyUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Verify this user?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please check if this user is authorized by you to register in this portal as an agent. Once verified, they will be able to take customer chat requests.</p>
+        <p class="alert alert-warning">In case you do not recognise this user, please click on delete to safely delete this account.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="verifyUser" class="btn btn-success">Verify User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="updateUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Update user details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please confirm if the new details entered by you are correct.</p>
+        <p class="alert alert-warning">The user will need these details to login to the system.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="updateUser" class="btn btn-success">Update User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="deleteUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete this user</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Please confirm if this user needs to be deleted. Verified users will be marked as inactive.</p>
+        <p class="alert alert-danger">If the user is new and not verified, they will be permanently deleted from the system.</p>
+        <div class="w-100 p-2 mb-3 border rounded">
+          <label for="adminPassword" class="form-label">Admin Password</label>
+          <input type="password" class="form-control" id="adminPassword" aria-describedby="agentIdHelp">
+          <div id="agentIdHelp" class="form-text">Enter your password and confirm delete</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="deleteUser" class="btn btn-success">Delete User</button>
+      </div>
+    </div>
+  </div>
+</div>

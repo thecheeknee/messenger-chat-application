@@ -36,6 +36,7 @@ module.exports.savePreset = async (req, res) => {
     if (!tag || tag === '' || !message || message === '') {
       throw data.msgErrors.presetInvalid;
     }
+
     const messageData = await presetModel.findOneAndUpdate(
       {
         tag: tag,

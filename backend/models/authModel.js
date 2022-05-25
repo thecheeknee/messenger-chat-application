@@ -33,6 +33,16 @@ const registerSchema = new Schema(
       required: false,
       default: false,
     },
+    totalRating: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    totalChats: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
     createdAt: Number,
     updatedAt: Number,
   },

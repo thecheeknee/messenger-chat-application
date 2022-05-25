@@ -1,0 +1,86 @@
+<div class="row">
+  <div class="col-md-4 col-sm-12">
+    <p class="lead pt-3 ps-4">Agents List</p>
+    <div class="w-100 p-3">
+      <div class="input-group">
+        <div class="input-group-text"><i class="bi bi-funnel-fill"></i></div>
+        <select class="col-auto form-select form-select-sm" id="agentStatus" aria-label=".form-select-sm example" onchange="getAgentsByStatus(this);">
+          <option disabled>Choose</option>
+          <option value="created" selected>Registered but not verified</option>
+          <option value="active">Verified & Active</option>
+          <option value="inactive">Inactive (old)</option>
+        </select>
+      </div>
+    </div>
+    <div class="list-group mb-4" id="agentsList"></div>
+  </div>
+  <div class="col-md-8 col-sm-12">
+    <p class="lead pt-3 ps-4">Agent Details</p>
+    <p class="alert alert-success d-none" id="agentActionSuccess"></p>
+    <p class="alert alert-danger d-none" id="agentActionFailure"></p>
+    <div class="w-100 p-3">
+      <form class="needs-validation" id="agentUpdateForm" name="agentUpdateForm" action="javascript:void(0);">
+        <div class="row">
+          <div class="col mb-3">
+            <label for="agentIdInput" class="form-label">Agent ID</label>
+            <input type="text" readonly class="form-control" id="agentIdInput" aria-describedby="agentIdHelp">
+            <div id="agentIdHelp" class="form-text">Agent system ID</div>
+          </div>
+          <div class="col mb-3">
+            <label for="agentUNameInput" class="form-label">Agent UserName</label>
+            <input type="text" readonly class="form-control" id="agentUNameInput" aria-describedby="agentUsernameHelp">
+            <div id="agentUsernameHelp" class="form-text">Agent unique username</div>
+          </div>
+          <div class="col mb-3">
+            <label for="agentStatusInput" class="form-label">Agent Status</label>
+            <input type="text" readonly class="form-control" id="agentStatusInput" aria-describedby="agentStatusHelp">
+            <div id="agentStatusHelp" class="form-text">Agent Status</div>
+          </div>
+          <div class="col-sm-12 mb-3">
+            <label for="agentNameInput" class="form-label">Agent Name</label>
+            <input type="text" class="form-control" id="agentNameInput" aria-describedby="agentNameHelp">
+            <div id="agentNameHelp" class="form-text">Agent name</div>
+          </div>
+          <div class="col-sm-12 mb-3">
+            <label for="agentEmailInput" class="form-label">Agent Email ID</label>
+            <input type="email" class="form-control" id="agentEmailInput" aria-describedby="agentEmailIDHelp">
+            <div id="agentEmailIDHelp" class="form-text">Agent Email ID</div>
+          </div>
+          <div class="col-sm-12 mb-3">
+            <label for="agentPassword" class="form-label">Reset Agent Password</label>
+            <input type="text" class="form-control" id="agentPassword" aria-describedby="agentPasswordHelp">
+            <div id="agentPasswordHelp" class="form-text">new password for the agent in case the agent has forgotten their old password.</div>
+          </div>
+          <div class="col mb-3">
+            <p class="alert alert-info">Total Chats by Agent : <strong id="totalChatCount"></strong></p>
+          </div>
+          <div class="col mb-3">
+            <p class="alert alert-info">Agent Rating : <strong id="totalRating"></strong></p>
+          </div>
+        </div>
+        <hr/>
+        <%- include('userActions') %>
+        <div class="row mb-4">
+          <div class="col">
+            <div class="d-grid">
+              <button class="btn btn-warning" id="verifyModalBtn" disabled data-bs-toggle="modal" data-bs-target="#verifyUserModal">
+                <i class="bi bi-check-circle-fill"></i> Verify</button>
+            </div>
+          </div>
+          <div class="col">
+            <div class="d-grid">
+              <button class="btn btn-success" id="updateModalBtn" disabled data-bs-toggle="modal" data-bs-target="#updateUserModal">
+                <i class="bi bi-cloud-arrow-up-fill"></i> Update</button>
+            </div>
+          </div>
+          <div class="col">
+            <div class="d-grid">
+              <button class="btn btn-danger" id="deleteModalBtn" disabled data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                <i class="bi bi-exclamation-circle-fill"></i> Delete</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

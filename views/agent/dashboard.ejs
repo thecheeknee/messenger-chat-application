@@ -14,8 +14,10 @@
     <title>Customer Support Chat: Agent Dashboard</title>
   </head>
   <body>
-    <%- include('../common/header', {userName: userName}) %>
+    <%- include('../common/header', {agentName: name}) %>
     <div class="w-100 p-3 bg-secondary">
+      <p class="alert alert-info d-none" id="logoutSuccess">Successfully Logged out. Redirecting to login page...</p>
+      <p class="alert alert-info d-none" id="logoutFail">Some error occurred. Redirecting to login page...</p>
       <div class="row">
         <%- include('chats', {userName: userName}) %>
         <div class="col-md-4 col-sm-12">

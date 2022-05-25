@@ -176,7 +176,7 @@ class Customer {
               // chat has already ended. Redirect to home page
               this._deleteCookies();
               window.location.pathname = '/';
-            } else if (json.detail.rating !== '0') {
+            } else if (json.detail.rating !== '') {
               //customer has already provided rating. Show modal and ask customer to end chat
               document
                 .getElementById('ratingSuccess')
@@ -192,7 +192,10 @@ class Customer {
             } else {
               document.getElementById('welcomeMessage').innerText =
                 'You are now connected to ' + chatAgentName;
-              setTimeout(this.getMessages(this._chatId), 3000);
+              setTimeout(() => {
+                this.getMessages(this._chatId);
+                refreshChat();
+              }, 3000);
             }
           }
         })
@@ -279,7 +282,7 @@ class Customer {
       return `
           <div class="d-flex flex-row justify-content-end mb-4 pt-1 cust-message">
             <div class="rounded ps-2 pe-2 pb-1 msg-wrapper">
-              <p class="small pt-2 ps-2 mb-0 text-secondary fw-bold">${sender}</p>
+              <p class="small pt-2 ps-2 mb-0 text-secondary fw-bold">You</p>
               <p class="small p-2 me-3 mb-1 text-dark">${messageData.text}</p>
             </div>
           </div>
@@ -289,6 +292,9 @@ class Customer {
         let optionsHtml = ``;
         this._expectedResponse = messageData.responseType;
         switch (this._expectedResponse.toLowerCase()) {
+          case 'endchat':
+            inputTxt.disabled = true;
+            break;
           case 'options':
             inputTxt.disabled = true;
             var keySet = Object.keys(messageData.options);
@@ -312,6 +318,18 @@ class Customer {
           default:
             inputTxt.removeAttribute('disabled');
             inputTxt.setAttribute('type', 'text');
+        }
+        if (inputTxt.disabled && optionsHtml === '') {
+          // if input text is disabled and optionsHtml is empty, agent has ended the chat and waiting for customer rating
+          return `
+            <div class="d-flex flex-row justify-content-start mb-3 agent-message">
+              <div class="rounded ps-2 pe-2 pb-1 msg-wrapper">
+                <p class="small pt-2 ps-2 mb-0 text-success fw-bold">${sender}</p>
+                <p class="small p-2 mb-1">${messageData.text}</p>
+              </div>
+            </div>
+            <p class="alert alert-info">The chat has been concluded by the agent. Please click on End Chat button on top to rate and end this chat. Your feedback is important to us.</p>
+          `;
         }
         return `
             <div class="d-flex flex-row justify-content-start mb-3 agent-message">
@@ -466,7 +484,7 @@ let newCustForm,
   cancelScreen,
   inputTxt,
   ratingOpt;
-var chatCustName, chatAgentName;
+var chatCustName, chatAgentName, refreshTime;
 
 (function () {
   const pathValue = window.location.pathname.split('/')[1];
@@ -593,4 +611,11 @@ function customerRegister(e) {
   } else {
     return false;
   }
+}
+
+function refreshChat() {
+  refreshTime = window.setInterval(() => {
+    const cust = new Customer(apiUrl, chatId);
+    cust.getMessages(chatId);
+  }, 20000);
 }

@@ -1,0 +1,50 @@
+<div class="row">
+  <div class="col-md-3 col-sm-6">
+    <p class="lead pt-3 ps-4">Active Agents</p>
+    <div class="list-group" id="activeAgentsList"></div>
+  </div>
+  <div class="col-md-5 col-sm-6">
+    <div class="d-flex flex-row justify-content-between">
+      <p class="lead pt-3 ps-4 text-success col-md-7">Chat History </p>
+      <div class="w-100 p-3">
+        <div class="input-group">
+          <div class="input-group-text"><i class="bi bi-funnel-fill"></i></div>
+          <select class="col-auto form-select form-select-sm" id="chatStatus" aria-label=".form-select-sm example" onchange="getChatsByType(this);">
+            <option disabled>Choose</option>
+            <option value="started">Created</option>
+            <option value="customer_ended">Ended by Customer</option>
+            <option value="ended" selected>Ended by Agent</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="list-group list-group-flush rounded pb-2 mb-5" id="agentChatList"></div>
+  </div>
+  <div class="col-md-4 col-sm-12">
+    <div class="modal" id="deleteChatModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete this chat</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Is this a valid chat? Please delete invalid chats to avoid duplicates and incorrect data being stored on the system.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" id="deleteChat" class="btn btn-danger">Confirm & Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-flex flex-row justify-content-between">
+      <p class="lead pt-3 ps-4 text-success col-md-7">Chat Details</p>
+      <div class="w-100 p-3">
+        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteChatModal">Delete Chat</button>
+      </div>
+    </div>
+    
+    <div class="list-group list-group-flush mb-5" id="chatDetails"></div>
+  </div>
+</div>

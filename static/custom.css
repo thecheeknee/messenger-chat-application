@@ -11,6 +11,12 @@
   overflow: auto;
   position: relative;
 }
+#activeAgentsList,
+#agentChatList,
+#chatDetails {
+  overflow: auto;
+  max-height: 65vh;
+}
 .msg-wrapper {
   width: auto;
   max-width: 80%;
@@ -23,4 +29,16 @@
 .cust-message .msg-wrapper {
   text-align: left;
   background-color: #ccc;
+}
+.preset-message {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.option-block {
+  position: relative;
+}
+.delete-option {
+  position: absolute;
+  right: 10px;
 }

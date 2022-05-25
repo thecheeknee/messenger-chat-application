@@ -1,0 +1,114 @@
+<div class="row">
+  <div class="col-md-4 col-sm-12">
+    <p class="lead pt-3 ps-4">Preset Messages</p>
+    <div class="list-group mb-4" id="presetList"></div>
+  </div>
+  <div class="col-md-8 col-sm-12">
+    <div class="modal" id="deletePresetModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete Preset</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger">
+              <strong class="alert-heading"></strong>
+              <p></p>
+            </div>
+            <p>Please confirm if this preset needs to be deleted</p>
+            <p class="alert alert-warning">You must recreate this preset tag once deleted</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" id="deletePreset" class="btn btn-danger">Delete Preset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="lead pt-3 ps-4">Preset Form <button class="float-end btn btn-primary" id="newPreset">New Preset</button></p>
+    <div class="w-100 p-3">
+      <form class="needs-validation" id="presetUpdateForm" name="presetUpdateForm" action="javascript:void(0);">
+        <div class="alert alert-danger d-none" id="presetValidateErrors">
+          <strong class="alert-heading">Update Error!</strong>
+          <p></p>
+        </div>
+        <p class="alert alert-success d-none" id="presetSuccess">Preset Details Successfully Saved!</p>
+        <input type="hidden" class="form-control" id="presetId" aria-describedby="presetId">
+        <div class="row">
+          <div class="col mb-3">
+            <label for="presetTagName" class="form-label">Tag Name</label>
+            <input type="text" class="form-control" id="presetTagName" aria-describedby="tagNameHelp" required>
+            <div id="tagNameHelp" class="form-text">A short name to identify your preset</div>
+          </div>
+          <div class="col mb-3">
+            <label for="presetResponseType" class="form-label">Expected Response Type</label>
+            <select class="form-control" id="presetResponseType" aria-describedby="responseTypeHelp" required onchange="setResponseType(this);">
+              <option value="Options">Options</option>
+              <option value="Text">Plain Text</option>
+              <option value="Number">Number</option>
+              <option value="EndChat">End Chat</option>
+            </select>
+            <div id="responseTypeHelp" class="form-text">The response type expected from the customer</div>
+          </div>
+          <div class="col mb-3">
+            <label for="presetSequence" class="form-label">Priority of display</label>
+            <select class="form-control" id="presetSequence" aria-describedby="sequenceHelp" required>
+              <option value=1>1: welcome text</option>
+              <option value=2>2: initial questions</option>
+              <option value=3>3: additional questions</option>
+              <option value=4>4: wait sequence</option>
+              <option value=5>5: thank you for waiting</option>
+              <option value=6>6: not found responses</option>
+              <option value=7>7: are you there?</option>
+              <option value=8>8: good bye</option>
+            </select>
+            <div id="sequenceHelp" class="form-text">The sequence in which these options will be visible to the agent.</div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="presetMessage" class="form-label">Full message</label>
+          <textarea class="form-control" id="presetMessage" aria-describedby="presetMessageHelp" required></textarea>
+          <div id="presetMessageHelp" class="form-text">The message as displayed to the customer</div>
+        </div>
+        <div class="mb-5 d-none" id="optionsWrapper">
+          <p class="lead">Options for the user</p>
+          <p class="alert alert-warning d-none" id="optionsBlockAlert">Maximum of 5 options allowed per question</p>
+          <div id="optionsBlock" class="p-2 border">
+            <div class="row option-block" data-id="optionName">
+              <button type="button" class="btn-close delete-option" aria-label="Close"></button>
+              <div class="col-sm-4">
+                <label class="form-label">Option Name</label>
+                <input type="text" class="form-control options-title">
+                <div class="form-text">A short name to identify your option</div>
+              </div>
+              <div class="col-sm-8">
+                <label class="form-label">Option Value</label>
+                <input type="text" class="form-control options-message">
+                <div class="form-text">Value displayed to the user</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-info mt-4" type="button" onclick="addOption(this);">
+            <i class="bi bi-node-plus-fill"></i> Add Option
+          </button>
+        </div>
+        <hr />
+        <div class="mb-3">
+          <div class="row">
+            <div class="col text-end">
+              <button class="btn btn-success" type="submit" id="savePreset">
+                <i class="bi bi-upload"></i> Save Preset
+              </button>
+            </div>
+            <div class="col">
+              <button class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#deletePresetModal">
+                <i class="bi bi-trash-fill"></i> Delete Preset
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
