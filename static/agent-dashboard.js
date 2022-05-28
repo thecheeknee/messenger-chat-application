@@ -452,17 +452,16 @@ function relistChats() {
 }
 
 function checkCustomerRequests() {
-  if (activeChatList.querySelectorAll('.chat-tag').length === 0) {
-    if (inactiveChatList.querySelectorAll('.chat-tag').length > 0) {
-      incomingRequest.innerHTML = `<p class="alert alert-warning">No active chats. But you have inactive chats waiting to be closed.</p>`;
-    } else {
+  if (activeChatList.querySelectorAll('.chat-tag').length <= 5) {
+    if (activeChatList.querySelectorAll('.chat-tag').length === 0 && inactiveChatList.querySelectorAll('.chat-tag').length === 0) {
       incomingRequest.innerHTML = `<p class="alert alert-success">No active or inactive chats.</p>`;
+    } else if (inactiveChatList.querySelectorAll('.chat-tag').length > 0) {
+      incomingRequest.innerHTML = `<p class="alert alert-warning">You have inactive chats waiting to be closed.</p>`;
     }
-  } else if (activeChats <= 5) {
     const chats = new Dashboard(apiUrl);
     chats.newCustomerRequest();
   } else {
-    incomingRequest.innerHTML = `<p class="alert alert-info">You are on 5 active chats. Maximum chat limit reached</p>`;
+    incomingRequest.innerHTML = `<p class="alert alert-info">You are already in 5 active chats. Maximum chat limit reached</p>`;
   }
 }
 
