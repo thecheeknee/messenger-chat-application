@@ -12,7 +12,12 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const presetRoute = require('./routes/presetRoute');
 const messengerRoute = require('./routes/messengerRoute');
-const { authChatCheck, authMiddleware, authAdminCheck } = require('./middleware/authMiddleware');
+const { userFetchEmail } = require('./controller/authController');
+const {
+  authChatCheck,
+  authMiddleware,
+  authAdminCheck,
+} = require('./middleware/authMiddleware');
 
 dotenv.config({
   path: 'backend/config/config.env',
@@ -25,6 +30,7 @@ app.use('/api/messenger', authRoute);
 app.use('/api/messenger', chatRoute);
 app.use('/api/messenger', presetRoute);
 app.use('/api/messenger', messengerRoute);
+app.use(express.static('static'));
 
 const PORT = process.env.PORT || 5000;
 app.get('/', (req, res) => {
@@ -54,11 +60,35 @@ app.get('/account-register', (req, res) => {
 });
 
 app.get('/admin-dashboard', authAdminCheck, (req, res) => {
-  res.render('admin/dashboard', { server_path: process.env.SERVER_URL });
+  const { userName, name, type } = req;
+  res.render('admin/dashboard', {
+    server_path: process.env.SERVER_URL,
+    userName: userName,
+    name: name,
+    accType: type,
+  });
 });
 
 app.get('/agent-dashboard', authMiddleware, (req, res) => {
-  res.render('agent/dashboard', { server_path: process.env.SERVER_URL });
+  const { userName, name, type } = req;
+  res.render('agent/dashboard', {
+    server_path: process.env.SERVER_URL,
+    userName: userName,
+    name: name,
+    accType: type,
+  });
+});
+
+app.get('/personal-info', authMiddleware, userFetchEmail, (req, res) => {
+  const { myId, userName, name, type, emailId } = req;
+  res.render('common/password', {
+    server_path: process.env.SERVER_URL,
+    agentId: myId,
+    userName: userName,
+    name: name,
+    accType: type,
+    email: emailId,
+  });
 });
 
 databaseConnect();

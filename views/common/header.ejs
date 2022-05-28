@@ -1,0 +1,28 @@
+<div class="container">
+  <header class="d-flex flex-wrap justify-content-center py-3 mb-0">
+    <div class="modal fade" id="logoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>You have active chats. Please ensure to provide a resolution to them and then logout.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="goBackToChat" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <a class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
+      <span class="fs-5">Welcome <strong><%= agentName %></strong></span>
+    </a>
+    <ul class="nav nav-pills">
+      <li class="nav-item"><a href="javascript:void(0);" id="backToDashboard" class="nav-link bg-light text-info me-1" data-type="<%= accType %>">Dashboard</a></li>
+      <li class="nav-item"><a href="javascript:void(0);" id="personalDetails" class="nav-link bg-light text-success me-1">Update Details</a></li>
+      <li class="nav-item"><a href="javascript:void(0);" id="logoutAccount" class="nav-link bg-success text-light">Logout</a></li>
+    </ul>
+  </header>
+</div>

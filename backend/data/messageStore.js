@@ -35,8 +35,10 @@ module.exports = Object.freeze({
   },
 
   rating: {
+    notSatisfied: 'notSatisfied',
+    satisfied: 'satisfied',
     good: 'good',
-    bad: 'bad',
+    excellent: 'excellent',
   },
 
   common: {
@@ -51,6 +53,7 @@ module.exports = Object.freeze({
     invalidName: 'name_invalid',
     invalidEmail: 'email_invalid',
     invalidPassword: 'password_invalid',
+    uNameEmailMatch: 'username_email_match',
     incorrectPassword: 'password_incorrect',
     invalidPincode: 'pincode_invalid',
     invalidType: 'type_invalid',
@@ -64,7 +67,9 @@ module.exports = Object.freeze({
   authSuccess: {
     userAdded: 'user_registered',
     userLogin: 'user_logged_in',
+    userDeactivated: 'user_deactivated',
     userDeleted: 'user_deleted',
+    userUpdated: 'agent_updated',
     passwordUpdated: 'password_updated',
     tokenDeleted: 'token_deleted',
     custAdded: 'cust_added',

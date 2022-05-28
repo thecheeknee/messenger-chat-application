@@ -18,6 +18,10 @@ const presetSchema = new Schema(
       type: Object,
       required: false,
     },
+    sequence: {
+      type: Number,
+      required: true,
+    },
   },
   { timestamps: true }
 );

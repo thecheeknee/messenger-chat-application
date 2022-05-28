@@ -8,6 +8,8 @@ module.exports.authMiddleware = async (req, res, next) => {
     req.type = deCodeToken.type;
     req.verified = deCodeToken.verified;
     req.status = deCodeToken.status;
+    req.userName = deCodeToken.userName;
+    req.name = deCodeToken.name;
     next();
   } else {
     res.status(400).json({
@@ -18,7 +20,7 @@ module.exports.authMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports.authChatCheck = async(req, res, next) => {
+module.exports.authChatCheck = async (req, res, next) => {
   const { authToken } = req.cookies;
   if (authToken) {
     const deCodeToken = await jwt.verify(authToken, process.env.SECRET);
@@ -30,7 +32,7 @@ module.exports.authChatCheck = async(req, res, next) => {
   } else {
     res.redirect('/logout');
   }
-}
+};
 
 module.exports.authAdminCheck = async (req, res, next) => {
   const { authToken } = req.cookies;
@@ -38,6 +40,8 @@ module.exports.authAdminCheck = async (req, res, next) => {
     const deCodeToken = await jwt.verify(authToken, process.env.SECRET);
     req.myId = deCodeToken.id;
     req.type = deCodeToken.type;
+    req.userName = deCodeToken.userName;
+    req.name = deCodeToken.name;
     if (!deCodeToken.verifiedAdmin) {
       res.status(400).json({
         error: {

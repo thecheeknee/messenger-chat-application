@@ -43,7 +43,7 @@ module.exports.initiateMessage = async (req, res, next) => {
           if (!chatDetails) throw data.chat.startFailed;
           if (last_msg) throw data.chat.chatPresent;
           req.body = {
-            senderName: getAgent.name,
+            senderName: getAgent.userName,
             chatId: chatDetails._id,
             message: firstMessage.text,
             options: firstMessage.expectedResponse,
@@ -78,10 +78,10 @@ module.exports.messageUploadDB = async (req, res) => {
         if (err) throw err;
         else if (!chat) throw data.chatAlerts.noChats;
         else {
-          console.log(chat);
           const receiverId =
             chat.agentId === senderId ? chat.customerId : chat.agentId;
           const insertMessage = await messageModel.create({
+            chatId: chatId,
             senderId: senderId,
             senderName: senderName,
             receiverId: receiverId,
@@ -122,31 +122,19 @@ module.exports.messageGet = async (req, res) => {
       if (err) throw err;
       else {
         messageModel
-          .find(
-            {
-              $or: [
-                {
-                  senderId: docs.agentId,
-                  receiverId: docs.customerId,
-                },
-                {
-                  senderId: docs.customerId,
-                  receiverId: docs.agentId,
-                },
-              ],
-            },
-            (warn, messageList) => {
-              if (warn) throw warn;
-              /**
-               * check if the last message is by the agent on the customer UI.
-               * If agent, then analyse the message and take appropriate action.
-               *  */
-              res.status(200).json({
-                success: true,
-                messageList: messageList,
-              });
-            }
-          )
+          .find({ chatId }, (warn, messageList) => {
+            if (warn) throw warn;
+            /**
+             * check if the last message is by the agent on the customer UI.
+             * If agent, then analyse the message and take appropriate action.
+             *  */
+            res.status(200).json({
+              success: true,
+              status: docs.status,
+              chatEnded: docs.chatEndedBy,
+              messageList: messageList,
+            });
+          })
           .sort({
             createdAt: 1,
           })
@@ -160,5 +148,25 @@ module.exports.messageGet = async (req, res) => {
         message: error,
       },
     });
+  }
+};
+
+module.exports.deleteMessages = async (req, res, next) => {
+  const { chatId } = req.body;
+  try {
+    messageModel.deleteMany(
+      {
+        chatId: chatId,
+      },
+      (error, deleteData) => {
+        if (error) throw error;
+        req.body.messagesFound = deleteData.deletedCount;
+        next();
+      }
+    );
+  } catch (errM) {
+    req.body.messagesFound = 0;
+    req.body.messageError = errM;
+    next();
   }
 };

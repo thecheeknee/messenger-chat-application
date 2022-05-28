@@ -6,16 +6,13 @@ const data = require('../data/messageStore');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const uTypes = data.types;
-const uStatus = data.status;
-
 module.exports.userRegister = async (req, res) => {
   /** for registering new agents / admin if admin not present */
   const { userName, name, email, type, password, confirmPassword, adminName } =
     req.body;
   const errorList = [];
 
-  if (!type || type === uTypes.customer) {
+  if (!type || type === data.types.customer) {
     throw data.authErrors.invalidType;
   }
 
@@ -31,10 +28,16 @@ module.exports.userRegister = async (req, res) => {
     errorList.push(data.authErrors.invalidEmail);
   }
 
+  if (validator.isEmail(email) && email.split('@')[0] === userName) {
+    errorList.push(data.authErrors.uNameEmailMatch);
+  }
+
   if (
     !password ||
     !confirmPassword ||
-    (password !== confirmPassword && password.length < 6)
+    !/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(password) ||
+    password !== confirmPassword ||
+    password.length < 6
   ) {
     errorList.push(data.authErrors.invalidPassword);
   }
@@ -43,23 +46,23 @@ module.exports.userRegister = async (req, res) => {
     res.status(400).json({
       error: {
         code: data.authErrors.invalidDetails,
-        detail: errorList
+        detail: errorList,
       },
     });
   } else {
     try {
       const checkAdmin = await userAuthModel.findOne({
-        type: uTypes.admin,
+        type: data.types.admin,
       });
-      if (type === uTypes.admin && checkAdmin) {
+      if (type === data.types.admin && checkAdmin) {
         throw data.authErrors.userExists;
       }
 
-      if (type === uTypes.agent && !checkAdmin) {
+      if (type === data.types.agent && !checkAdmin) {
         throw data.authErrors.adminMissing;
       }
 
-      if (type == uTypes.agent && adminName !== checkAdmin.name) {
+      if (type == data.types.agent && adminName !== checkAdmin.name) {
         throw data.authErrors.adminMissing;
       }
 
@@ -80,12 +83,15 @@ module.exports.userRegister = async (req, res) => {
             name,
             uType: type,
             password: await bcrypt.hash(password, 10),
-            verified: type === uTypes.admin ? true : false,
-            status: type === uTypes.admin ? uStatus.active : uStatus.created,
+            verified: type === data.types.admin ? true : false,
+            status:
+              type === data.types.admin
+                ? data.status.active
+                : data.status.created,
           },
           (err, userCreate) => {
             if (err) throw err;
-            if (userCreate.uType === uTypes.admin) {
+            if (userCreate.uType === data.types.admin) {
               const token = jwt.sign(
                 {
                   id: userCreate._id,
@@ -151,9 +157,9 @@ module.exports.userLogin = async (req, res) => {
     error.push(data.authErrors.invalidEmail);
   }
 
-  if (!type || type === uTypes.customer) {
+  if (!type || type === data.types.customer) {
     error.push(data.authErrors.invalidType);
-  } else if (type === uTypes.admin) {
+  } else if (type === data.types.admin) {
     if (!userName) {
       error.push(data.authErrors.invalidUName);
     }
@@ -173,7 +179,7 @@ module.exports.userLogin = async (req, res) => {
   } else {
     try {
       const findFilter =
-        type === uTypes.admin
+        type === data.types.admin
           ? {
               email: email,
               userName: userName,
@@ -194,7 +200,7 @@ module.exports.userLogin = async (req, res) => {
         if (
           matchPassword &&
           checkUser.verified &&
-          checkUser.status === uStatus.active
+          checkUser.status === data.status.active
         ) {
           let tokenData = {
             id: checkUser._id,
@@ -205,7 +211,7 @@ module.exports.userLogin = async (req, res) => {
             status: checkUser.status,
             registerTime: checkUser.createdAt,
           };
-          if (checkUser.uType === uTypes.admin) {
+          if (checkUser.uType === data.types.admin) {
             tokenData.verifiedAdmin = true;
           }
           const token = jwt.sign(tokenData, process.env.SECRET, {
@@ -221,6 +227,7 @@ module.exports.userLogin = async (req, res) => {
             success: true,
             message: data.authSuccess.userLogin,
             detail: checkUser.uType,
+            info: checkUser.userName,
             token,
           });
         } else {
@@ -253,47 +260,51 @@ module.exports.userLogin = async (req, res) => {
 };
 
 module.exports.userLogout = (req, res) => {
-  if (req.myId && (req.type === uTypes.admin || req.type === uTypes.agent)) {
+  try {
     /** update log data with logout time */
-    res.status(200).cookie('authToken', '').json({
-      success: true,
-    });
-  } else {
-    res.status(400).json({
-      error: {
-        code: data.authErrors.userNotFound,
-      },
-    });
+    if (req.myId && (req.type === 'agent' || req.type === 'admin')) {
+      res.status(200).cookie('authToken', '').json({
+        success: true,
+      });
+    } else throw data.authErrors.invalidType;
+  } catch (errorData) {
+    res
+      .status(400)
+      .cookie('authToken', '')
+      .json({
+        error: {
+          code: data.authErrors.userNotFound,
+          detail: errorData,
+        },
+      });
   }
 };
 
 module.exports.userVerify = async (req, res) => {
   /** to verify agents by admin */
-  const { verifyList } = req.body;
+  const { agentId } = req.body;
   try {
-    if (req.myId && req.type === uTypes.admin) {
-      /** verify all IDs under verifyList */
-      verifyList.forEach(async (element) => {
-        await userAuthModel.findOneAndUpdate(
-          {
-            userName: element.userName,
-            email: element.email,
-            type: uTypes.agent,
-          },
-          {
-            verified: true,
-            status: uStatus.active,
-          },
-          {
-            new: true,
-          }
-        );
-      });
-      res.status(200).json({
-        success: true,
-        message: data.authSuccess.userVerified,
-        detail: verifyList,
-      });
+    if (req.myId && req.type === data.types.admin) {
+      console.log(agentId);
+      userAuthModel.findByIdAndUpdate(
+        agentId,
+        {
+          verified: true,
+          status: data.status.active,
+        },
+        {
+          new: true,
+        },
+        (errFind, updatedAgent) => {
+          if (errFind) throw errFind;
+
+          res.status(200).json({
+            success: true,
+            message: data.authSuccess.userVerified,
+            detail: updatedAgent,
+          });
+        }
+      );
     } else throw data.authErrors.adminMissing;
   } catch (err) {
     res.status(400).json({
@@ -308,12 +319,12 @@ module.exports.userVerify = async (req, res) => {
 module.exports.userList = async (req, res) => {
   /** fetch list of users by Admin where type = agent */
   try {
-    if (req.myId && req.type === uTypes.admin) {
+    if (req.myId && req.type === data.types.admin) {
       const { verified, status } = req.body;
       /** find agents who are 'created' (new + unverified), 'active' (current + verified) or 'deleted' (old + unverified) */
       userAuthModel.find(
         {
-          uType: uTypes.agent,
+          uType: data.types.agent,
           verified: verified,
           status: status,
         },
@@ -345,11 +356,138 @@ module.exports.userList = async (req, res) => {
   }
 };
 
-module.exports.userChangePassword = async (req, res) => {
-  /** check if the user and token match and allow password to be changed */
-  const { userName, password, newPassword, confirmPassword } = req.body;
+module.exports.userUpdateByAdmin = async (req, res) => {
+  const { agentId, name, password, emailId } = req.body;
   try {
-    if (req.type !== uTypes.customer) {
+    const changeDetails =
+      password && password.length > 6
+        ? {
+            password: await bcrypt.hash(password, 10),
+          }
+        : {
+            name,
+            email: emailId,
+          };
+    userAuthModel.findByIdAndUpdate(
+      agentId,
+      changeDetails,
+      {
+        new: true,
+      },
+      (err, agentUpdated) => {
+        if (err) throw data.authErrors.updateFailed;
+        res.status(200).json({
+          success: true,
+          message: data.authSuccess.userUpdated,
+          detail: {
+            agentUpdated,
+            changeDetails,
+          },
+        });
+      }
+    );
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
+    });
+  }
+};
+
+module.exports.calculateAgentRating = async (req, res) => {
+  const { agentId, chatList, totalChatCount } = req.body;
+  try {
+    let chatCount = chatList.length;
+    let chatTotal = 0;
+    let chatRatingData = [0, 0, 0, 0];
+    chatList.forEach((chat) => {
+      let chatRating = 0;
+      switch (chat.rating) {
+        case 'notSatisfied':
+          chatRating = 1;
+          break;
+        case 'satisfied':
+          chatRating = 2;
+          break;
+        case 'good':
+          chatRating = 3;
+          break;
+        case 'excellent':
+          chatRating = 4;
+          break;
+        default:
+      }
+      if (chatRating === 0) {
+        chatCount -= 1;
+        return;
+      }
+      chatRatingData[chatRating - 1] += 1;
+    });
+    for (let rating in chatRatingData) {
+      rating = parseInt(rating);
+      chatTotal += chatRatingData[rating] * (rating + 1);
+    }
+    const totalRating = chatTotal / chatCount;
+    // console.log(chatCount, chatRatingData, chatTotal, totalRating);
+    userAuthModel.findByIdAndUpdate(
+      agentId,
+      {
+        totalRating,
+        totalChats: totalChatCount,
+      },
+      {
+        new: true,
+      },
+      (err, chatRating) => {
+        if (err) throw err;
+        res.status(200).json({
+          success: true,
+          message: data.chat.foundChats,
+          totalChatCount,
+          detail: chatList,
+          rating: chatRating,
+        });
+      }
+    );
+  } catch (error) {
+    res.status(200).json({
+      success: true,
+      message: data.chat.foundChats,
+      totalChatCount,
+      detail: chatList,
+      rating: error,
+    });
+  }
+};
+
+module.exports.userFetchEmail = async (req, res, next) => {
+  const { myId, type, userName, name } = req;
+  try {
+    if (type !== data.types.customer) {
+      const fetchUser = await userAuthModel.findById(myId);
+      if (fetchUser.userName === userName && fetchUser.name === name) {
+        req.emailId = fetchUser.email;
+        next();
+      } else {
+        throw data.authErrors.userNotFound;
+      }
+    } else throw data.authErrors.invalidType;
+  } catch (err) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        detail: err,
+      },
+    });
+  }
+};
+
+module.exports.userSelfUpdate = async (req, res) => {
+  const { name, email, password, newPassword, confirmPassword } = req.body;
+  try {
+    if (req.type !== data.types.customer) {
       const checkUser = await userAuthModel
         .findOne({
           _id: req.myId,
@@ -362,52 +500,67 @@ module.exports.userChangePassword = async (req, res) => {
           password,
           checkUser.password
         );
-
         if (!matchPassword) throw data.authErrors.invalidPassword;
 
-        if (
-          checkUser.type === uTypes.admin &&
-          userName !== checkUser.userName
-        ) {
-          /** trying to remove admin account without providing userName */
-          throw data.authErrors.adminMissing;
-        }
+        let changeDetails;
 
-        if (
-          !newPassword ||
-          !confirmPassword ||
-          newPassword !== confirmPassword ||
-          newPassword.length < 6
-        ) {
+        //if newPassword or confirmPassword is present or they dont match
+        if (!newPassword || !confirmPassword || newPassword !== confirmPassword)
           throw data.authErrors.incorrectPassword;
+
+        if (
+          !newPassword &&
+          !confirmPassword &&
+          (/\d/.test(name) || !validator.isEmail(email))
+        )
+          throw data.authErrors.invalidDetails;
+
+        if (
+          newPassword &&
+          /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(
+            newPassword
+          ) &&
+          newPassword === confirmPassword
+        ) {
+          //user requests a password change. NO other details will be modified
+          changeDetails = {
+            password: await bcrypt.hash(newPassword, 10),
+          };
+        } else {
+          //newPassword or confirmPassword is not present. Update name and email ID
+          changeDetails = {
+            name: name,
+            email: email,
+          };
         }
 
-        userAuthModel.findOneAndUpdate(
-          {
-            _id: checkUser._id,
-            email: checkUser.email,
-            userName: checkUser.userName,
-          },
-          {
-            password: await bcrypt.hash(newPassword, 10),
-          },
-          {
-            new: true,
-          },
-          (err, updateUser) => {
-            if (err) throw data.authErrors.updateFailed;
-            res.status(200).json({
-              success: true,
-              message: data.authSuccess.passwordUpdated,
-              detail: updateUser,
-            });
-          }
-        );
-      } else {
-        throw data.authErrors.userNotFound;
-      }
-    }
+        if (changeDetails) {
+          console.log(changeDetails);
+          userAuthModel.findByIdAndUpdate(
+            req.myId,
+            changeDetails,
+            {
+              new: true,
+            },
+            (err, changeStatus) => {
+              if (err) throw err;
+              if (changeStatus) {
+                res.status(200).json({
+                  success: true,
+                  message: data.authSuccess.userUpdated,
+                  detail: {
+                    changeStatus,
+                    changeDetails,
+                  },
+                });
+              }
+            }
+          );
+        }
+      } else throw data.authErrors.userNotFound;
+    } else throw data.authErrors.invalidType;
   } catch (err) {
+    console.log({ name, email, password, newPassword, confirmPassword });
     res.status(400).json({
       error: {
         code: data.common.serverError,
@@ -419,7 +572,7 @@ module.exports.userChangePassword = async (req, res) => {
 
 module.exports.userDelete = async (req, res) => {
   /** unverify user passed as attribute if current user type is admin */
-  const { password, agentUName, agentEmail } = req.body;
+  const { agentId, adminPassword } = req.body;
   try {
     const checkAdmin = await userAuthModel
       .findOne({
@@ -429,29 +582,48 @@ module.exports.userDelete = async (req, res) => {
       .select('+password');
 
     if (checkAdmin) {
-      const matchPassword = await bcrypt.compare(password, checkAdmin.password);
+      const matchPassword = await bcrypt.compare(
+        adminPassword,
+        checkAdmin.password
+      );
 
-      if (matchPassword && req.type === uTypes.admin) {
+      if (matchPassword && req.type === data.types.admin) {
         /** admin confirmed. Unverify user if type == agent */
-        userAuthModel.findOneAndUpdate(
+        userAuthModel.findOne(
           {
-            userName: agentUName,
-            email: agentEmail,
-            type: uTypes.agent,
+            _id: agentId,
+            type: data.types.agent,
           },
-          {
-            verified: false,
-          },
-          {
-            new: true,
-          },
-          (err, delUser) => {
-            if (err) throw data.authErrors.deleteFailed;
-            res.status(200).json({
-              success: true,
-              message: data.authSuccess.userDeleted,
-              detail: delUser,
-            });
+          async (err, agentFound) => {
+            if (err) throw err;
+            let agentDelete = '';
+            if (agentFound.status === data.status.created) {
+              // this is an unverified agent. Delete permanently
+              agentDelete = await userAuthModel.findByIdAndDelete(
+                agentFound._id
+              );
+            } else if (agentFound.status === data.status.active) {
+              agentDelete = await userAuthModel.findByIdAndUpdate(
+                agentFound._id,
+                {
+                  verified: false,
+                  status: data.status.deleted,
+                },
+                {
+                  new: true,
+                }
+              );
+            } else throw data.common.notFound;
+            if (agentDelete) {
+              res.status(200).json({
+                success: true,
+                message:
+                  agentFound.status === data.status.created
+                    ? data.authSuccess.userDeleted
+                    : data.authSuccess.userDeactivated,
+                detail: agentDelete,
+              });
+            } else throw data.authErrors.deleteFailed;
           }
         );
       } else {
@@ -473,6 +645,7 @@ module.exports.userDelete = async (req, res) => {
     res.status(400).json({
       error: {
         code: data.common.serverError,
+        detail: err,
       },
     });
   }
@@ -514,7 +687,7 @@ module.exports.custCreate = async (req, res) => {
       chars[Math.floor(Math.random() * 26)] +
       Math.random().toString(36).substring(2, 11);
 
-    const uType = uTypes.customer;
+    const uType = data.types.customer;
 
     userAuthModel.create(
       {
@@ -524,7 +697,7 @@ module.exports.custCreate = async (req, res) => {
         uType,
         password: await bcrypt.hash(password, 10),
         verified: false,
-        status: uStatus.created,
+        status: data.status.created,
       },
       (err, custCreate) => {
         if (err) throw err;
@@ -574,19 +747,19 @@ module.exports.custAlert = async (req, res) => {
    * frontend will check if agent has any slot available
    */
   try {
-    if (req.type === uTypes.agent) {
+    if (req.type === data.types.agent) {
       const checkAgent = await userAuthModel.findById(req.myId);
       if (checkAgent) {
         userAuthModel.find(
           {
-            uType: uTypes.customer,
-            status: uStatus.created,
+            uType: data.types.customer,
+            status: data.status.created,
           },
           (err, checkCust) => {
             if (err) throw err;
 
             if (checkCust.length === 0) {
-              res.status(404).json({
+              res.status(200).json({
                 error: {
                   code: data.common.notFound,
                   detail: data.chatAlerts.noChats,
@@ -610,14 +783,7 @@ module.exports.custAlert = async (req, res) => {
       } else {
         throw data.authErrors.invalidUName;
       }
-    } else {
-      res.status(404).json({
-        error: {
-          code: data.common.notFound,
-          detail: data.authErrors.invalidType,
-        },
-      });
-    }
+    } else throw data.authErrors.invalidType;
   } catch (err) {
     res.status(400).json({
       error: {
@@ -633,7 +799,7 @@ module.exports.custVerify = async (req, res, next) => {
     /** verify customer by agent and start chat */
     const agentCheck = await userAuthModel.findOne({
       _id: req.myId,
-      uType: uTypes.agent,
+      uType: data.types.agent,
     });
 
     if (agentCheck) {
@@ -641,11 +807,11 @@ module.exports.custVerify = async (req, res, next) => {
       const custUpdate = await userAuthModel.findOneAndUpdate(
         {
           _id: custId,
-          uType: uTypes.customer,
+          uType: data.types.customer,
         },
         {
           verified: true,
-          status: uStatus.active,
+          status: data.status.active,
         },
         {
           new: true,
@@ -654,7 +820,7 @@ module.exports.custVerify = async (req, res, next) => {
       if (custUpdate) {
         req.body = {
           agentId: agentCheck._id,
-          agentName: agentCheck.name,
+          agentUserName: agentCheck.userName,
           custId: custUpdate._id,
           custUserName: custUpdate.userName,
           status: custUpdate.status,
@@ -685,21 +851,21 @@ module.exports.userToken = async (req, res) => {
       _id: req.myId,
       type: req.type,
     };
-    if (req.type !== uTypes.customer) {
+    if (req.type !== data.types.customer) {
       /** only active agents and admin should be allowed to continue. */
-      filterData.status = uStatus.active;
+      filterData.status = data.status.active;
     }
     const checkUser = await userAuthModel.findOne(filterData);
-    if (!checkUser || checkUser.status === uStatus.deleted) {
+    if (!checkUser || checkUser.status === data.status.deleted) {
       res.status(200).cookie('authToken', '').json({
         success: true,
         message: data.authSuccess.tokenDeleted,
       });
     } else {
       if (
-        checkUser.uType === uTypes.customer &&
-        req.status === uStatus.created &&
-        checkUser.status === uStatus.active
+        checkUser.uType === data.types.customer &&
+        req.status === data.status.created &&
+        checkUser.status === data.status.active
       ) {
         /**
          * customer chat request has been accepted by agent.
@@ -758,12 +924,12 @@ module.exports.custFetchId = async (req, res, next) => {
 module.exports.custDelete = async (req, res) => {
   /** if chat is marked as ended/customerEnded - update customer status to deleted */
   try {
-    const { custId } = req.body;
+    const { custId, endedBy } = req.body;
     userAuthModel.findByIdAndUpdate(
       custId,
       {
         verified: false,
-        status: uStatus.deleted,
+        status: data.status.deleted,
       },
       {
         new: true,
@@ -771,14 +937,28 @@ module.exports.custDelete = async (req, res) => {
       (err, custStatus) => {
         if (err) throw err;
         else {
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.custDeleted,
-            detail: {
-              userName: custStatus.userName,
-              status: custStatus.status,
-            },
-          });
+          if (endedBy === 'customer') {
+            res
+              .status(200)
+              .cookie('authToken', '')
+              .json({
+                success: true,
+                message: data.authSuccess.custDeleted,
+                detail: {
+                  userName: custStatus.userName,
+                  status: custStatus.status,
+                },
+              });
+          } else {
+            res.status(200).json({
+              success: true,
+              message: data.authSuccess.custDeleted,
+              detail: {
+                userName: custStatus.userName,
+                status: custStatus.status,
+              },
+            });
+          }
         }
       }
     );
@@ -787,6 +967,33 @@ module.exports.custDelete = async (req, res) => {
       error: {
         code: data.common.serverError,
         errorMessage: err,
+      },
+    });
+  }
+};
+
+module.exports.deleteCustomer = async (req, res) => {
+  try {
+    const { messagesFound, messageError, chatsDeleted, customerId } = req.body;
+    userAuthModel.findByIdAndDelete(customerId, (err, doc) => {
+      if (err) throw err;
+      res.status(200).json({
+        success: true,
+        message: data.authSuccess.custDeleted,
+        detail: {
+          messagesFound,
+          messageError,
+          chatsDeleted,
+          doc,
+        },
+      });
+    });
+  } catch (errCust) {
+    res.status(400).json({
+      error: {
+        code: data.common.serverError,
+        message: errCust,
+        detail: req.body,
       },
     });
   }
@@ -801,9 +1008,9 @@ module.exports.inactiveCustomers = async (req, res, next) => {
     const expiryTime = Math.floor(Date.now() / 1000);
     -300;
     const list = await userAuthModel.find({
-      uType: uTypes.customer,
+      uType: data.types.customer,
       verified: false,
-      status: uStatus.created,
+      status: data.status.created,
       createdAt: {
         $lte: expiryTime,
       },
