@@ -166,6 +166,7 @@ class Account {
             document
               .getElementById('agentActionSuccess')
               .classList.remove('d-none');
+            window.scrollTo(0, 0);
           } else throw json;
         })
         .catch((err) => {
@@ -197,7 +198,6 @@ class Account {
       logoutSuccess.classList.remove('d-none');
     }
 
-    clearCookies();
     setTimeout(() => {
       window.location.hash = '';
       window.location.pathname = '/login';

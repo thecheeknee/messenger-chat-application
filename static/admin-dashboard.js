@@ -275,6 +275,7 @@ class AdminDashboard {
         .then((json) => {
           if (json.success) {
             document.getElementById('presetSuccess').classList.remove('d-none');
+            window.scrollTo(0, 0);
             this.listPresets();
           } else throw json;
         })
@@ -367,6 +368,7 @@ class AdminDashboard {
               .getElementById('agentActionSuccess')
               .classList.remove('d-none');
             resetUserData();
+            window.scrollTo(0, 0);
           } else throw json;
         })
         .catch((err) => {

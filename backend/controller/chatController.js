@@ -133,10 +133,12 @@ module.exports.endChat = async (req, res, next) => {
   /** end chat by either customer (customerEnded) or agent (with resolution) */
   try {
     let chatDetails = {};
+    let actionBy = 'customer';
     const { chatId, resolution } = req.body;
     if (req.type === data.types.agent) {
       if (!resolution || resolution === '') throw data.chat.resolutionMissing;
       else {
+        actionBy = 'agent';
         chatDetails = {
           status: data.chat.ended,
           resolution,
@@ -161,6 +163,7 @@ module.exports.endChat = async (req, res, next) => {
           /** send custId for deletion */
           req.body = {
             custId: chatEnded.customerId,
+            endedBy: actionBy,
           };
           next();
         }

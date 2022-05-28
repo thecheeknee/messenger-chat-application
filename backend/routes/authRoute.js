@@ -6,8 +6,8 @@ const {
   userLogout,
   userList,
   userVerify,
-  userUpdateDetails,
-  updateMyDetails,
+  userUpdateByAdmin,
+  userSelfUpdate,
   userDelete,
   custCreate,
   custAlert,
@@ -35,8 +35,8 @@ router.post('/user-login', userLogin);
 router.post('/user-logout', authMiddleware, userLogout);
 router.post('/user-list', authAdminCheck, userList);
 router.post('/user-verify', authMiddleware, userVerify);
-router.post('/user-update', authAdminCheck, userUpdateDetails);
-router.post('/update-my-details', authMiddleware, updateMyDetails);
+router.post('/user-update', authAdminCheck, userUpdateByAdmin);
+router.post('/update-my-details', authMiddleware, userSelfUpdate);
 router.post('/user-delete', authAdminCheck, userDelete);
 router.post('/cust-create', custCreate);
 router.post('/cust-alert', authMiddleware, custAlert);

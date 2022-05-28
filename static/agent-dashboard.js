@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-vars */
-let chatListScreen,
+let activeChatList,
+  inactiveChatList,
   chatWindow,
   chatInput,
   incomingRequest,
@@ -60,30 +61,30 @@ class Dashboard {
                 chat
               );
             }
-            chatListScreen.innerHTML = activeChatsBlock;
+            activeChatList.innerHTML = activeChatsBlock;
             if (activeChatId !== '') this.getChatMessages(activeChatId);
           } else throw json.error;
         })
         .catch((error) => {
-          console.log(error);
           activeChatsBlock += `<div class="list-group-item">
             <p class="p-2 border-bottom alert alert-warning">No Active Chats</p>
           </div>`;
-          chatListScreen.innerHTML = activeChatsBlock;
+          activeChatList.innerHTML = activeChatsBlock;
         });
       this.listInactiveChats();
     } catch (err) {
-      activeChatsBlock += `<div class="list-group-item">
+      activeChatList += `<div class="list-group-item">
         <p class="p-2 border-bottom alert alert-warning">Some error occurred</p>
       </div>`;
-      chatListScreen.innerHTML = activeChatsBlock;
+      activeChatList.innerHTML = activeChatsBlock;
     }
   }
 
   listInactiveChats() {
     // should be called only after activeChats
+    let inactiveChatsBlock = ``;
     try {
-      chatListScreen.innerHTML += `<div class="list-group-item d-flex justify-content-between align-items-start">
+      inactiveChatsBlock += `<div class="list-group-item d-flex justify-content-between align-items-start">
         <div class="ms-2 me-auto">
           <div class="fw-bold">Inactive Chats</div>
           These chats need to be closed by you!
@@ -98,22 +99,30 @@ class Dashboard {
           if (json.success && json.message === 'chat_found') {
             const inactiveChats = json.detail;
             for (let chat in inactiveChats) {
-              chatListScreen.innerHTML += this.createChatTag(
+              inactiveChatsBlock += this.createChatTag(
                 inactiveChats[chat],
                 inactiveChats[chat].status,
                 chat
               );
             }
+            inactiveChatList.innerHTML = inactiveChatsBlock;
           } else throw json.error;
         })
         .catch((error) => {
-          chatListScreen.innerHTML += `<div class="list-group-item">
+          inactiveChatsBlock += `<div class="list-group-item">
             <p class="p-2 border-bottom alert alert-warning">No Pending Chats</p>
             <span class="d-none">${error}</span>
           </div>`;
+          inactiveChatList.innerHTML = inactiveChatsBlock;
+        })
+        .finally(() => {
+          const chatTags = document.querySelectorAll('.chat-tag');
+          if (chatTags.length > 0) {
+            chatTags[0].click();
+          }
         });
     } catch (err) {
-      chatListScreen.innerHTML += `<div class="list-group-item">
+      inactiveChatList.innerHTML += `<div class="list-group-item">
           <p class="p-2 border-bottom alert alert-warning">Some error occurred</p>
         </div>`;
     }
@@ -416,9 +425,9 @@ class Dashboard {
 }
 
 (function () {
-  chatListScreen = document.getElementById('activeChats');
+  activeChatList = document.getElementById('activeChats');
   chatInput = document.getElementById('chatForm');
-  chatListScreen = document.getElementById('activeChats');
+  inactiveChatList = document.getElementById('inactiveChats');
   incomingRequest = document.getElementById('newCustAlert');
   presetBlock = document.getElementById('presetData');
   chatWindow = document.getElementById('chatRoom');
@@ -434,13 +443,27 @@ class Dashboard {
 })();
 
 function relistChats() {
+  chatWindow.innerHTML = '';
+  chatInput.querySelector('#messageText').value = '';
+  chatInput.querySelector('#chatMessageInfo p').innerHTML = '';
+  chatInput.querySelector('#chatMessageInfo strong').innerText = '';
   const chats = new Dashboard(apiUrl);
   chats.listActiveChats();
 }
 
 function checkCustomerRequests() {
-  const chats = new Dashboard(apiUrl);
-  chats.newCustomerRequest();
+  if (activeChatList.querySelectorAll('.chat-tag').length === 0) {
+    if (inactiveChatList.querySelectorAll('.chat-tag').length > 0) {
+      incomingRequest.innerHTML = `<p class="alert alert-warning">No active chats. But you have inactive chats waiting to be closed.</p>`;
+    } else {
+      incomingRequest.innerHTML = `<p class="alert alert-success">No active or inactive chats.</p>`;
+    }
+  } else if (activeChats <= 5) {
+    const chats = new Dashboard(apiUrl);
+    chats.newCustomerRequest();
+  } else {
+    incomingRequest.innerHTML = `<p class="alert alert-info">You are on 5 active chats. Maximum chat limit reached</p>`;
+  }
 }
 
 function timeCheck(diff) {

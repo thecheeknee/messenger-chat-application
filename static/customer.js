@@ -27,13 +27,6 @@ class Customer {
     return await response.json();
   }
 
-  _deleteCookies() {
-    const cookies = document.cookie.split(';');
-    cookies.forEach((cookie) => {
-      document.cookie = cookie + '=;expires=' + new Date(0).toUTCString();
-    });
-  }
-
   custRegister(name, pincode) {
     try {
       const data = {
@@ -141,8 +134,7 @@ class Customer {
               waitingScreen.classList.add('d-none');
               logoutScreen.classList.remove('d-none');
             }
-
-            this._deleteCookies();
+            clearCookies();
           } else throw json.error;
         })
         .catch((err) => {
@@ -174,8 +166,7 @@ class Customer {
               json.detail.status === 'ended'
             ) {
               // chat has already ended. Redirect to home page
-              this._deleteCookies();
-              window.location.pathname = '/';
+              clearCookies();
             } else if (json.detail.rating !== '') {
               //customer has already provided rating. Show modal and ask customer to end chat
               document
@@ -197,7 +188,7 @@ class Customer {
                 refreshChat();
               }, 3000);
             }
-          }
+          } else throw json;
         })
         .catch((err) => {
           waitingScreen.classList.add('d-none');
@@ -535,6 +526,13 @@ var chatCustName, chatAgentName, refreshTime;
       break;
   }
 })();
+
+function clearCookies() {
+  const cookies = document.cookie.split(';');
+  cookies.forEach((cookie) => {
+    document.cookie = cookie + '=;expires=' + new Date(0).toUTCString();
+  });
+}
 
 function submitOption(e) {
   e.preventDefault();

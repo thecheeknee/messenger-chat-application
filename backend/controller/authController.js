@@ -260,20 +260,23 @@ module.exports.userLogin = async (req, res) => {
 };
 
 module.exports.userLogout = (req, res) => {
-  if (
-    req.myId &&
-    (req.type === data.types.admin || req.type === data.types.agent)
-  ) {
+  try {
     /** update log data with logout time */
-    res.status(200).cookie('authToken', '').json({
-      success: true,
-    });
-  } else {
-    res.status(400).json({
-      error: {
-        code: data.authErrors.userNotFound,
-      },
-    });
+    if (req.myId && (req.type === 'agent' || req.type === 'admin')) {
+      res.status(200).cookie('authToken', '').json({
+        success: true,
+      });
+    } else throw data.authErrors.invalidType;
+  } catch (errorData) {
+    res
+      .status(400)
+      .cookie('authToken', '')
+      .json({
+        error: {
+          code: data.authErrors.userNotFound,
+          detail: errorData,
+        },
+      });
   }
 };
 
@@ -353,16 +356,21 @@ module.exports.userList = async (req, res) => {
   }
 };
 
-module.exports.userUpdateDetails = async (req, res) => {
+module.exports.userUpdateByAdmin = async (req, res) => {
   const { agentId, name, password, emailId } = req.body;
   try {
+    const changeDetails =
+      password && password.length > 6
+        ? {
+            password: await bcrypt.hash(password, 10),
+          }
+        : {
+            name,
+            email: emailId,
+          };
     userAuthModel.findByIdAndUpdate(
       agentId,
-      {
-        name,
-        email: emailId,
-        password: await bcrypt.hash(password, 10),
-      },
+      changeDetails,
       {
         new: true,
       },
@@ -371,7 +379,10 @@ module.exports.userUpdateDetails = async (req, res) => {
         res.status(200).json({
           success: true,
           message: data.authSuccess.userUpdated,
-          detail: agentUpdated,
+          detail: {
+            agentUpdated,
+            changeDetails,
+          },
         });
       }
     );
@@ -473,9 +484,8 @@ module.exports.userFetchEmail = async (req, res, next) => {
   }
 };
 
-module.exports.updateMyDetails = async (req, res) => {
+module.exports.userSelfUpdate = async (req, res) => {
   const { name, email, password, newPassword, confirmPassword } = req.body;
-  console.log(req.body, req.myId);
   try {
     if (req.type !== data.types.customer) {
       const checkUser = await userAuthModel
@@ -494,27 +504,30 @@ module.exports.updateMyDetails = async (req, res) => {
 
         let changeDetails;
 
-        if (
-          (newPassword && !confirmPassword) ||
-          (!newPassword && confirmPassword) ||
-          newPassword !== confirmPassword
-        )
+        //if newPassword or confirmPassword is present or they dont match
+        if (!newPassword || !confirmPassword || newPassword !== confirmPassword)
           throw data.authErrors.incorrectPassword;
+
+        if (
+          !newPassword &&
+          !confirmPassword &&
+          (/\d/.test(name) || !validator.isEmail(email))
+        )
+          throw data.authErrors.invalidDetails;
 
         if (
           newPassword &&
           /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,16}$/.test(
-            password
+            newPassword
           ) &&
           newPassword === confirmPassword
         ) {
           //user requests a password change. NO other details will be modified
           changeDetails = {
-            password: await bcrypt.hash(password, 10),
+            password: await bcrypt.hash(newPassword, 10),
           };
-        }
-
-        if (!changeDetails && name && email) {
+        } else {
+          //newPassword or confirmPassword is not present. Update name and email ID
           changeDetails = {
             name: name,
             email: email,
@@ -535,7 +548,10 @@ module.exports.updateMyDetails = async (req, res) => {
                 res.status(200).json({
                   success: true,
                   message: data.authSuccess.userUpdated,
-                  detail: changeStatus,
+                  detail: {
+                    changeStatus,
+                    changeDetails,
+                  },
                 });
               }
             }
@@ -544,6 +560,7 @@ module.exports.updateMyDetails = async (req, res) => {
       } else throw data.authErrors.userNotFound;
     } else throw data.authErrors.invalidType;
   } catch (err) {
+    console.log({ name, email, password, newPassword, confirmPassword });
     res.status(400).json({
       error: {
         code: data.common.serverError,
@@ -742,7 +759,7 @@ module.exports.custAlert = async (req, res) => {
             if (err) throw err;
 
             if (checkCust.length === 0) {
-              res.status(404).json({
+              res.status(200).json({
                 error: {
                   code: data.common.notFound,
                   detail: data.chatAlerts.noChats,
@@ -766,14 +783,7 @@ module.exports.custAlert = async (req, res) => {
       } else {
         throw data.authErrors.invalidUName;
       }
-    } else {
-      res.status(404).json({
-        error: {
-          code: data.common.notFound,
-          detail: data.authErrors.invalidType,
-        },
-      });
-    }
+    } else throw data.authErrors.invalidType;
   } catch (err) {
     res.status(400).json({
       error: {
@@ -914,7 +924,7 @@ module.exports.custFetchId = async (req, res, next) => {
 module.exports.custDelete = async (req, res) => {
   /** if chat is marked as ended/customerEnded - update customer status to deleted */
   try {
-    const { custId } = req.body;
+    const { custId, endedBy } = req.body;
     userAuthModel.findByIdAndUpdate(
       custId,
       {
@@ -927,14 +937,28 @@ module.exports.custDelete = async (req, res) => {
       (err, custStatus) => {
         if (err) throw err;
         else {
-          res.status(200).json({
-            success: true,
-            message: data.authSuccess.custDeleted,
-            detail: {
-              userName: custStatus.userName,
-              status: custStatus.status,
-            },
-          });
+          if (endedBy === 'customer') {
+            res
+              .status(200)
+              .cookie('authToken', '')
+              .json({
+                success: true,
+                message: data.authSuccess.custDeleted,
+                detail: {
+                  userName: custStatus.userName,
+                  status: custStatus.status,
+                },
+              });
+          } else {
+            res.status(200).json({
+              success: true,
+              message: data.authSuccess.custDeleted,
+              detail: {
+                userName: custStatus.userName,
+                status: custStatus.status,
+              },
+            });
+          }
         }
       }
     );
