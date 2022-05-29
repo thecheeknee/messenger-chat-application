@@ -9,8 +9,7 @@ let activeChatList,
   presetBlock,
   presetOptions,
   messageJson,
-  activeChatId,
-  newCustAlert;
+  activeChatId;
 
 class Dashboard {
   constructor(_apiUrl) {
@@ -118,7 +117,18 @@ class Dashboard {
         .finally(() => {
           const chatTags = document.querySelectorAll('.chat-tag');
           if (chatTags.length > 0) {
+            activeChatTrack();
             chatTags[0].click();
+          }
+          if (
+            activeChatList.querySelectorAll('.chat-tag').length === 0 &&
+            inactiveChatList.querySelectorAll('.chat-tag').length === 0
+          ) {
+            incomingRequest.innerHTML = `<p class="alert alert-success">No active or inactive chats.</p>`;
+          } else if (
+            inactiveChatList.querySelectorAll('.chat-tag').length > 0
+          ) {
+            incomingRequest.innerHTML = `<p class="alert alert-warning">You have inactive chats waiting to be closed.</p>`;
           }
         });
     } catch (err) {
@@ -155,7 +165,7 @@ class Dashboard {
           // console.log(err);
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
     }
   }
 
@@ -202,7 +212,10 @@ class Dashboard {
           <div class="fw-bold">${chatDetails.customerName}</div>
           <small>Started ${timeCheck(activeSince)} ago</small>
         </div>
-        <span class="badge bg-primary rounded-pill d-none">14</span>
+        <span class="badge bg-primary rounded-pill chat-alert d-none">
+          <i class="bi bi-exclamation-triangle-fill d-none"></i>
+          <em>0</em>
+        </span>
       </a>
       `;
     } else {
@@ -221,7 +234,6 @@ class Dashboard {
           <div class="fw-bold">${chatDetails.customerName}</div>
           <small>Inactive ${timeCheck(inactiveSince)} ago</small>
         </div>
-        <span class="badge bg-primary rounded-pill d-none">14</span>
       </a>
       `;
     }
@@ -260,13 +272,13 @@ class Dashboard {
           } else throw json;
         })
         .catch((err) => {
-          console.log(err);
-          // presetBlock.innerHTML = `<div class="col">
-          //   <p class="alert alert-warning">No Presets Found. Please contact Admin!</p>
-          // </div>`;
+          // console.log(err);
+          presetBlock.innerHTML = `<div class="col">
+            <p class="alert alert-warning">No Presets Found. Please contact Admin!</p>
+          </div>`;
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
     }
   }
 
@@ -351,10 +363,10 @@ class Dashboard {
           } else throw json;
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
         });
     } catch (err) {
-      console.log(err);
+      // console.log(err);
     }
   }
 
@@ -382,17 +394,19 @@ class Dashboard {
         .then((json) => {
           if (json.success && json.message === 'message_sent') {
             if (json.initiated) {
+              //emit to customer - agent message
               chatWindow.innerHTML = '';
             }
             clearInput();
+            socket.emit('agent message', activeChatId);
             this.getChatMessages(activeChatId);
           } else throw json;
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
     }
   }
 
@@ -410,21 +424,23 @@ class Dashboard {
       chatEndedByAgent
         .then((json) => {
           if (json.success && json.message === 'cust_deleted') {
+            socket.emit('agent chat ended', chatId);
             chatWindow.innerHTML += `<p class="alert alert-success">Successfully ended chat. Reloading your chats in 10 seconds</p>`;
             chatWindow.scrollTop = chatWindow.scrollHeight;
             setTimeout(relistChats, 10000);
           }
         })
         .catch((err) => {
-          console.log(error);
+          // console.log(error);
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
     }
   }
 }
 
 (function () {
+  socket = io();
   activeChatList = document.getElementById('activeChats');
   chatInput = document.getElementById('chatForm');
   inactiveChatList = document.getElementById('inactiveChats');
@@ -439,7 +455,9 @@ class Dashboard {
   const chats = new Dashboard(apiUrl);
   chats.listActiveChats();
   chats.getPresets();
-  newCustAlert = setInterval(checkCustomerRequests, 5000);
+  socket.on('chat requested', () => {
+    checkCustomerRequests();
+  });
 })();
 
 function relistChats() {
@@ -453,11 +471,6 @@ function relistChats() {
 
 function checkCustomerRequests() {
   if (activeChatList.querySelectorAll('.chat-tag').length <= 5) {
-    if (activeChatList.querySelectorAll('.chat-tag').length === 0 && inactiveChatList.querySelectorAll('.chat-tag').length === 0) {
-      incomingRequest.innerHTML = `<p class="alert alert-success">No active or inactive chats.</p>`;
-    } else if (inactiveChatList.querySelectorAll('.chat-tag').length > 0) {
-      incomingRequest.innerHTML = `<p class="alert alert-warning">You have inactive chats waiting to be closed.</p>`;
-    }
     const chats = new Dashboard(apiUrl);
     chats.newCustomerRequest();
   } else {
@@ -479,6 +492,48 @@ function timeCheck(diff) {
   return days + ' days ' + hours + ' hours ' + minutes + ' minutes ';
 }
 
+function activeChatTrack() {
+  socket.on('customer sent message', (chatId) => {
+    const chatTag = document.querySelector(
+      '.chat-tag[data-chat-id="' + chatId + '"]'
+    );
+    if (chatTag !== undefined) {
+      if (chatId !== activeChatId) {
+        const chatSpan = chatTag.querySelector('span.chat-alert');
+        chatSpan.querySelector('em').innerText =
+          parseInt(chatSpan.querySelector('em').innerText) + 1;
+        chatSpan.classList.remove('d-none');
+      } else {
+        chatTag.click();
+      }
+    }
+  });
+  socket.on('rating received', (chatId) => {
+    const chatTag = document.querySelector(
+      '.chat-tag[data-chat-id="' + chatId + '"]'
+    );
+    if (chatTag !== undefined) {
+      chatTag.querySelector('span.chat-alert').classList.remove('d-none');
+      chatTag
+        .querySelector('span.chat-alert')
+        .querySelector('i')
+        .classList.remove('d-none');
+    }
+  });
+  socket.on('customer ended chat', (chatId) => {
+    const chatTag = document.querySelector(
+      '.chat-tag[data-chat-id="' + chatId + '"]'
+    );
+    if (chatTag !== undefined) {
+      chatTag.querySelector('span.chat-alert').classList.remove('d-none');
+      chatTag
+        .querySelector('span.chat-alert')
+        .querySelector('i')
+        .classList.remove('d-none');
+    }
+  });
+}
+
 function getChat(obj) {
   const chatId = obj.getAttribute('data-chat-id');
   const activeChatTag = document.querySelector('.chat-tag.active');
@@ -486,6 +541,12 @@ function getChat(obj) {
     activeChatTag.classList.remove('active');
   }
   obj.classList.add('active');
+  const chatSpan = obj.querySelector('span.chat-alert');
+  if (chatSpan) {
+    chatSpan.querySelector('em').innerText = 0;
+    chatSpan.classList.add('d-none');
+    chatSpan.querySelector('i').classList.add('d-none');
+  }
   const dashboard = new Dashboard(apiUrl);
   dashboard.getChatMessages(chatId);
 }
