@@ -1,9 +1,41 @@
 /* eslint-disable no-console */
 const express = require('express');
-// const path = require('path');
 const app = express();
 const dotenv = require('dotenv');
 const cors = require('cors');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  /* options */
+});
+
+io.on('connection', (socket) => {
+  console.log(`user connected`);
+  socket.on('request chat', (msg) => {
+    console.log('new customer', msg);
+    socket.broadcast.emit('chat requested');
+  });
+  socket.on('customer message', (chatId) => {
+    socket.broadcast.emit('customer sent message', chatId);
+  });
+  socket.on('agent message', (chatId) => {
+    socket.broadcast.emit('agent sent message', chatId);
+  });
+  socket.on('rating sent', (chatId) => {
+    socket.broadcast.emit('rating received', chatId);
+  });
+  socket.on('customer chat ended', (chatId) => {
+    socket.broadcast.emit('customer ended chat', chatId);
+  });
+  socket.on('agent chat ended', (chatId) => {
+    socket.broadcast.emit('agent ended chat', chatId);
+  });
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+});
 
 const databaseConnect = require('./config/database');
 const authRoute = require('./routes/authRoute');
@@ -93,6 +125,6 @@ app.get('/personal-info', authMiddleware, userFetchEmail, (req, res) => {
 
 databaseConnect();
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

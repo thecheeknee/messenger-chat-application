@@ -41,6 +41,7 @@ class Customer {
       custCreate
         .then((json) => {
           if (json.success) {
+            socket.emit('request chat', 'cust waiting');
             _parent.waitForVerification(json.message);
           } else throw json.error;
         })
@@ -64,7 +65,7 @@ class Customer {
           }
         });
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
@@ -93,7 +94,9 @@ class Customer {
                     logoutScreen.classList.remove('d-none');
                   } else if (timer === this._timeout) {
                     this.deleteCustomer('system');
-                  } else setTimeout(refreshData, 5000);
+                  } else {
+                    setTimeout(refreshData, 5000);
+                  }
                   break;
                 case 'token_deleted':
                   //stop polling, display logout screen
@@ -103,7 +106,7 @@ class Customer {
             } else throw json;
           })
           .catch((error) => {
-            console.log(error);
+            // console.log(error);
             waitingScreen.classList.add('d-none');
             errorScreen.classList.remove('d-none');
           });
@@ -111,7 +114,7 @@ class Customer {
 
       refreshData(); //initiate polling
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
@@ -134,16 +137,15 @@ class Customer {
               waitingScreen.classList.add('d-none');
               logoutScreen.classList.remove('d-none');
             }
-            clearCookies();
           } else throw json.error;
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
           waitingScreen.classList.add('d-none');
           errorScreen.classList.remove('d-none');
         });
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
@@ -165,8 +167,7 @@ class Customer {
               json.detail.status === 'customer_ended' ||
               json.detail.status === 'ended'
             ) {
-              // chat has already ended. Redirect to home page
-              clearCookies();
+              window.location.pathname = '/logout';
             } else if (json.detail.rating !== '') {
               //customer has already provided rating. Show modal and ask customer to end chat
               document
@@ -186,7 +187,7 @@ class Customer {
               setTimeout(() => {
                 this.getMessages(this._chatId);
                 refreshChat();
-              }, 3000);
+              }, 1000);
             }
           } else throw json;
         })
@@ -195,7 +196,7 @@ class Customer {
           errorScreen.classList.remove('d-none');
         });
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
@@ -260,7 +261,7 @@ class Customer {
         } else throw json;
       })
       .catch((err) => {
-        console.log(err);
+        // console.log(err);
         waitingScreen.classList.add('d-none');
         errorScreen.classList.remove('d-none');
       });
@@ -387,14 +388,15 @@ class Customer {
             if (json.success) {
               inputTxt.value = '';
               this.getMessages(this._chatId);
+              socket.emit('customer message', this._chatId);
             }
           })
           .catch((err) => {
-            console.log(err);
+            // console.log(err);
             errorScreen.classList.remove('d-none');
           });
       } catch (error) {
-        console.log(err);
+        // console.log(err);
         errorScreen.classList.remove('d-none');
       }
     }
@@ -411,6 +413,7 @@ class Customer {
         .then((json) => {
           if (json.success) {
             inputTxt.disabled = true;
+            socket.emit('rating sent', this._chatId);
             // user has to end chat. Remove escape options
             document.getElementById('ratingSuccess').classList.remove('d-none');
             cancelScreen.querySelector('.btn-close').disabled = true;
@@ -424,11 +427,11 @@ class Customer {
           }
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
           errorScreen.classList.remove('d-none');
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       errorScreen.classList.remove('d-none');
     }
   }
@@ -443,11 +446,12 @@ class Customer {
       endChat
         .then((json) => {
           if (json.success) {
+            socket.emit('customer chat ended', this._chatId);
             window.location.pathname = '/logout';
           }
         })
         .catch((err) => {
-          console.log(err);
+          // console.log(err);
           cancelScreen.querySelector('.btn-close').removeAttribute('disabled');
           cancelScreen
             .querySelector('#goBackToChat')
@@ -456,7 +460,7 @@ class Customer {
           cancelScreen.hide();
         });
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       cancelScreen.querySelector('.btn-close').removeAttribute('disabled');
       cancelScreen.querySelector('#goBackToChat').removeAttribute('disabled');
       cancelScreen.querySelector('#terminateChat').disabled = true;
@@ -481,6 +485,7 @@ var chatCustName, chatAgentName, refreshTime;
   const pathValue = window.location.pathname.split('/')[1];
   switch (pathValue) {
     case '':
+      socket = io();
       newCustForm = document.getElementById('newCustomer');
       waitingScreen = document.getElementById('waiting');
       alreadyConnectedScreen = document.getElementById('alreadyConnected');
@@ -500,6 +505,7 @@ var chatCustName, chatAgentName, refreshTime;
       newCustForm.addEventListener('submit', customerRegister, false);
       break;
     case 'chat':
+      socket = io();
       var cust = new Customer(apiUrl, chatId);
       waitingScreen = document.getElementById('waiting');
       chatScreen = document.getElementById('messagesBlock');
@@ -526,13 +532,6 @@ var chatCustName, chatAgentName, refreshTime;
       break;
   }
 })();
-
-function clearCookies() {
-  const cookies = document.cookie.split(';');
-  cookies.forEach((cookie) => {
-    document.cookie = cookie + '=;expires=' + new Date(0).toUTCString();
-  });
-}
 
 function submitOption(e) {
   e.preventDefault();
@@ -612,8 +611,15 @@ function customerRegister(e) {
 }
 
 function refreshChat() {
-  refreshTime = window.setInterval(() => {
-    const cust = new Customer(apiUrl, chatId);
-    cust.getMessages(chatId);
-  }, 20000);
+  socket.on('agent sent message', (chat) => {
+    if (chat === chatId) {
+      const cust = new Customer(apiUrl, chatId);
+      cust.getMessages(chatId);
+    }
+  });
+  socket.on('agent ended chat', (chat) => {
+    if (chat === chatId) {
+      window.location.pathname = '/logout';
+    }
+  });
 }
