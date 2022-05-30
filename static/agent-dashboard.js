@@ -250,21 +250,36 @@ class Dashboard {
         .then((json) => {
           if (json.success && json.message === 'preset_data') {
             const listPresets = json.detail;
+            let sequenceCounter = 0;
+            let sequenceBuilder = [];
             for (let i in listPresets) {
               presetOptions[listPresets[i].tag] =
                 listPresets[i].expectedResponse;
-              presetBlock.innerHTML += `
-                <div class="col-md-4 col-sm-6 mb-3">
-                  <button
-                    class="btn btn-light border w-100 preset-tag-btn"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="${listPresets[i].message}"
-                    data-response="${listPresets[i].responseType}"
-                    >${listPresets[i].tag}</button>
-                </div>
+              if (sequenceCounter !== parseInt(listPresets[i].sequence)) {
+                sequenceCounter = parseInt(listPresets[i].sequence);
+                sequenceBuilder[sequenceCounter] = '';
+              }
+              sequenceBuilder[sequenceCounter] += `
+              <button
+                class="btn btn-light border me-2 mb-2 preset-tag-btn"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="${listPresets[i].message}"
+                data-sequence="${listPresets[i].sequence}"
+                data-response="${listPresets[i].responseType}"
+                >${listPresets[i].tag}
+              </button>
               `;
             }
+
+            for (let c in sequenceBuilder) {
+              presetBlock.innerHTML += `<div class="row mb-3" data-seq="${c}">
+                <div class="col-md-12 col-sm-12">
+                ${sequenceBuilder[c]}
+                </div>
+              </div>`;
+            }
+
             const btns = document.querySelectorAll('.preset-tag-btn');
             btns.forEach((btn) => {
               btn.addEventListener('click', addTemplateMessage, false);
@@ -513,11 +528,15 @@ function activeChatTrack() {
       '.chat-tag[data-chat-id="' + chatId + '"]'
     );
     if (chatTag !== undefined) {
-      chatTag.querySelector('span.chat-alert').classList.remove('d-none');
-      chatTag
-        .querySelector('span.chat-alert')
-        .querySelector('i')
-        .classList.remove('d-none');
+      if (chatId !== activeChatId) {
+        chatTag.querySelector('span.chat-alert').classList.remove('d-none');
+        chatTag
+          .querySelector('span.chat-alert')
+          .querySelector('i')
+          .classList.remove('d-none');
+      } else {
+        chatTag.click();
+      }
     }
   });
   socket.on('customer ended chat', (chatId) => {
@@ -525,11 +544,15 @@ function activeChatTrack() {
       '.chat-tag[data-chat-id="' + chatId + '"]'
     );
     if (chatTag !== undefined) {
-      chatTag.querySelector('span.chat-alert').classList.remove('d-none');
-      chatTag
-        .querySelector('span.chat-alert')
-        .querySelector('i')
-        .classList.remove('d-none');
+      if (chatId !== activeChatId) {
+        chatTag.querySelector('span.chat-alert').classList.remove('d-none');
+        chatTag
+          .querySelector('span.chat-alert')
+          .querySelector('i')
+          .classList.remove('d-none');
+      } else {
+        chatTag.click();
+      }
     }
   });
 }

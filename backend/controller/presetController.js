@@ -5,7 +5,7 @@ const data = require('../data/messageStore');
 module.exports.getPresets = async (req, res) => {
   try {
     const errors = [];
-    const getTags = await presetModel.find();
+    const getTags = await presetModel.find({}).sort({ sequence: 1 });
 
     if (getTags && getTags.length > 0) {
       res.status(200).json({

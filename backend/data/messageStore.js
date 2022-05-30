@@ -82,6 +82,8 @@ module.exports = Object.freeze({
     noChats: 'no_chats_present',
     chatWaiting: 'incoming_chat',
     chatDeclined: 'chat_declined',
+    weekendFail: 'weekend_check',
+    timeFail: 'time_check',
   },
 
   msgErrors: {
