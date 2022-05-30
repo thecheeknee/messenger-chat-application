@@ -157,6 +157,7 @@ class Customer {
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
+    document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   }
 
   chatInit() {
@@ -545,6 +546,7 @@ var chatCustName, chatAgentName, refreshTime;
       break;
     case 'logout':
     default:
+      document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       newCustForm = document.getElementById('newCustomer');
       waitingScreen = document.getElementById('waiting');
       logoutScreen = document.getElementById('logout');
