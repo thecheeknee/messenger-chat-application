@@ -200,8 +200,8 @@ class Account {
 
     setTimeout(() => {
       window.location.hash = '';
-      window.location.pathname = '/login';
-    }, 5000);
+      window.location.pathname = '/logout';
+    }, 2000);
   }
 }
 

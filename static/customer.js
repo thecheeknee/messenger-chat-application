@@ -59,6 +59,14 @@ class Customer {
             errors.innerHTML = errorList;
             errors.classList.remove('d-none');
             newCustForm.classList.remove('d-none');
+          } else if (error.detail === 'weekend_check') {
+            //not available on weekends
+            weekendScreen.classList.remove('d-none');
+            newCustForm.classList.add('d-none');
+          } else if (error.detail === 'time_check') {
+            //not available on off hours
+            businessHoursScreen.classList.remove('d-none');
+            newCustForm.classList.add('d-none');
           } else {
             waitingScreen.classList.add('d-none');
             errorScreen.classList.remove('d-none');
@@ -149,6 +157,7 @@ class Customer {
       waitingScreen.classList.add('d-none');
       errorScreen.classList.remove('d-none');
     }
+    document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   }
 
   chatInit() {
@@ -268,6 +277,8 @@ class Customer {
   }
 
   processMessage(sender, senderType, messageData, process) {
+    document.getElementById('submitNeeded').innerHTML = '';
+    document.getElementById('submitNeeded').classList.add('d-none');
     if (senderType === 'customer') {
       inputTxt.removeAttribute('disabled');
       inputTxt.setAttribute('type', 'text');
@@ -301,6 +312,14 @@ class Customer {
                   </button>
                 `;
             }
+            break;
+          case 'date':
+            inputTxt.removeAttribute('disabled');
+            inputTxt.setAttribute('type', 'date');
+            document.getElementById('submitNeeded').innerHTML = `
+              <button class="btn btn-success" type="submit">Send</button>
+            `;
+            document.getElementById('submitNeeded').classList.remove('d-none');
             break;
           case 'number':
             inputTxt.removeAttribute('disabled');
@@ -472,6 +491,8 @@ class Customer {
 let newCustForm,
   chatScreen,
   waitingScreen,
+  weekendScreen,
+  businessHoursScreen,
   alreadyConnectedScreen,
   busyScreen,
   errorScreen,
@@ -488,6 +509,8 @@ var chatCustName, chatAgentName, refreshTime;
       socket = io();
       newCustForm = document.getElementById('newCustomer');
       waitingScreen = document.getElementById('waiting');
+      weekendScreen = document.getElementById('weekend');
+      businessHoursScreen = document.getElementById('timecheck');
       alreadyConnectedScreen = document.getElementById('alreadyConnected');
       busyScreen = document.getElementById('busy');
       errorScreen = document.getElementById('error');
@@ -523,6 +546,7 @@ var chatCustName, chatAgentName, refreshTime;
       break;
     case 'logout':
     default:
+      document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       newCustForm = document.getElementById('newCustomer');
       waitingScreen = document.getElementById('waiting');
       logoutScreen = document.getElementById('logout');
@@ -584,6 +608,7 @@ function cancelChatRequest(e) {
 }
 
 function customerRegister(e) {
+  // const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   if (
     e.target.checkValidity() &&
     document.querySelectorAll('.is-invalid').length === 0
@@ -597,14 +622,26 @@ function customerRegister(e) {
     const customerName = nameInput.value.replace(/\s/g, '');
     const customerPincode = pincodeInput.value;
 
-    waitingScreen.querySelector('#customerName').innerText = customerName;
-    waitingScreen.querySelector('#customerPincode').innerText = customerPincode;
+    let timeCheck = new Date();
+    if (timeCheck.getDay() === 0 || timeCheck.getDay() === 6) {
+      //not available on weekends
+      weekendScreen.classList.remove('d-none');
+      newCustForm.classList.add('d-none');
+    } else if (timeCheck.getHours() < 10 || timeCheck.getHours() > 17) {
+      //not available on off hours
+      businessHoursScreen.classList.remove('d-none');
+      newCustForm.classList.add('d-none');
+    } else {
+      waitingScreen.querySelector('#customerName').innerText = customerName;
+      waitingScreen.querySelector('#customerPincode').innerText =
+        customerPincode;
 
-    waitingScreen.classList.remove('d-none');
-    newCustForm.classList.add('d-none');
+      waitingScreen.classList.remove('d-none');
+      newCustForm.classList.add('d-none');
 
-    const cust = new Customer(apiUrl, chatId);
-    cust.custRegister(customerName, customerPincode);
+      const cust = new Customer(apiUrl, chatId);
+      cust.custRegister(customerName, customerPincode);
+    }
   } else {
     return false;
   }

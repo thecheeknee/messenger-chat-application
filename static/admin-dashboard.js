@@ -445,7 +445,7 @@ class AdminDashboard {
         data-name="${agentData.name}"
         data-email="${agentData.email}"
         data-status="${agentData.status}"
-        data-rating="${agentData.totalRating}/5"
+        data-rating="${(agentData.totalRating).toFixed(2)}/5"
         data-chats="${agentData.totalChats}"
         class="list-group-item list-group-item-action agent-tag"
         onClick="${clickAction.name}(this)">
