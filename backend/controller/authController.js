@@ -52,7 +52,7 @@ module.exports.userRegister = async (req, res) => {
   } else {
     try {
       const checkAdmin = await userAuthModel.findOne({
-        type: data.types.admin,
+        uType: data.types.admin,
       });
       if (type === data.types.admin && checkAdmin) {
         throw data.authErrors.userExists;
@@ -62,7 +62,7 @@ module.exports.userRegister = async (req, res) => {
         throw data.authErrors.adminMissing;
       }
 
-      if (type == data.types.agent && adminName !== checkAdmin.name) {
+      if (type === data.types.agent && adminName !== checkAdmin.userName) {
         throw data.authErrors.adminMissing;
       }
 
@@ -285,7 +285,6 @@ module.exports.userVerify = async (req, res) => {
   const { agentId } = req.body;
   try {
     if (req.myId && req.type === data.types.admin) {
-      console.log(agentId);
       userAuthModel.findByIdAndUpdate(
         agentId,
         {
@@ -430,7 +429,6 @@ module.exports.calculateAgentRating = async (req, res) => {
       chatTotal += chatRatingData[rating] * (rating + 1);
     }
     const totalRating = chatTotal / chatCount;
-    // console.log(chatCount, chatRatingData, chatTotal, totalRating);
     userAuthModel.findByIdAndUpdate(
       agentId,
       {
@@ -535,7 +533,6 @@ module.exports.userSelfUpdate = async (req, res) => {
         }
 
         if (changeDetails) {
-          console.log(changeDetails);
           userAuthModel.findByIdAndUpdate(
             req.myId,
             changeDetails,
@@ -560,7 +557,6 @@ module.exports.userSelfUpdate = async (req, res) => {
       } else throw data.authErrors.userNotFound;
     } else throw data.authErrors.invalidType;
   } catch (err) {
-    console.log({ name, email, password, newPassword, confirmPassword });
     res.status(400).json({
       error: {
         code: data.common.serverError,
