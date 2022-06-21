@@ -26,6 +26,10 @@ const {
 } = require('../controller/chatController');
 const { deleteMessages } = require('../controller/messengerController');
 const {
+  isHolidayMode,
+  isWeekendMode,
+} = require('../controller/adminController');
+const {
   authMiddleware,
   authAdminCheck,
 } = require('../middleware/authMiddleware');
@@ -38,7 +42,7 @@ router.post('/user-verify', authMiddleware, userVerify);
 router.post('/user-update', authAdminCheck, userUpdateByAdmin);
 router.post('/update-my-details', authMiddleware, userSelfUpdate);
 router.post('/user-delete', authAdminCheck, userDelete);
-router.post('/cust-create', custCreate);
+router.post('/cust-create', isHolidayMode, isWeekendMode, custCreate);
 router.post('/cust-alert', authMiddleware, custAlert);
 router.post('/cust-verify', authMiddleware, custVerify, addChat);
 router.post('/cust-cancel', authMiddleware, custFetchId, custDelete);

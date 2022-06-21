@@ -62,7 +62,7 @@ module.exports.userRegister = async (req, res) => {
         throw data.authErrors.adminMissing;
       }
 
-      if (type == data.types.agent && adminName !== checkAdmin.name) {
+      if (type == data.types.agent && adminName !== checkAdmin.userName) {
         throw data.authErrors.adminMissing;
       }
 
@@ -654,91 +654,100 @@ module.exports.userDelete = async (req, res) => {
 module.exports.custCreate = async (req, res) => {
   /** create a temporary user */
   const chars = 'abcdefghijklmnopqrstuvwxyz1234567890';
-  const { name, pincode } = req.body;
+  const { name, pincode, holidayMode, weekendMode } = req.body;
   const errors = [];
 
   try {
     const timeCheck = new Date();
-    if (timeCheck.getDay() === 0 || timeCheck.getDay() === 6) {
-      //not available on weekends
-      throw data.chatAlerts.weekendFail;
-    } else if (timeCheck.getHours() < 10 || timeCheck.getHours() > 17) {
-      //not available on off hours
-      throw data.chatAlerts.timeFail;
-    } else {
-      const { authToken } = req.cookies;
-      /** check if token is already present in the system */
-      if (authToken) throw data.authErrors.userExists;
-
-      if (!name || /\d/.test(name)) {
-        errors.push(data.authErrors.invalidName);
+    if (holidayMode && holidayMode.status) {
+      throw {
+        status: data.admin.holiday,
+        reason: holidayMode.description
       }
-
-      if (!pincode) {
-        errors.push(data.authErrors.invalidPincode);
-      }
-
-      if (errors.length > 0) throw errors;
-
-      const userName =
-        name.replace(/\s+/g, '') +
-        pincode +
-        chars[Math.floor(Math.random() * 26)] +
-        Math.random().toString(36).substring(2, 8);
-
-      const email =
-        chars[Math.floor(Math.random() * 26)] +
-        Math.random().toString(36).substring(2, 11) +
-        '@customer.com';
-
-      const password =
-        chars[Math.floor(Math.random() * 26)] +
-        Math.random().toString(36).substring(2, 11);
-
-      const uType = data.types.customer;
-
-      userAuthModel.create(
-        {
-          userName,
-          name,
-          email,
-          uType,
-          password: await bcrypt.hash(password, 10),
-          verified: false,
-          status: data.status.created,
-        },
-        (err, custCreate) => {
-          if (err) throw err;
-          const token = jwt.sign(
-            {
-              id: custCreate._id,
-              userName: custCreate.userName,
-              name: custCreate.name,
-              type: custCreate.uType,
-              verified: custCreate.verified,
-              status: custCreate.status,
-              registerTime: custCreate.createdAt,
-            },
-            process.env.SECRET,
-            {
-              expiresIn: process.env.TOKEN_EXP,
-            }
-          );
-
-          const options = {
-            expires: new Date(
-              Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
-            ),
-          };
-
-          res.status(201).cookie('authToken', token, options).json({
-            success: true,
-            message: data.authSuccess.custAdded,
-            token,
-          });
-        }
-      );
     }
+    else if (weekendMode && weekendMode.status === false) {
+      if (timeCheck.getDay() === 0 || timeCheck.getDay() === 6) {
+        //not available on weekends
+        throw data.chatAlerts.weekendFail;
+      } else if (timeCheck.getHours() < 10 || timeCheck.getHours() > 17) {
+        //not available on off hours
+        throw data.chatAlerts.timeFail;
+      }
+    }
+    else if (weekendMode && weekendMode.status) {
+    }
+    const { authToken } = req.cookies;
+    /** check if token is already present in the system */
+    if (authToken) throw data.authErrors.userExists;
+
+    if (!name || /\d/.test(name)) {
+      errors.push(data.authErrors.invalidName);
+    }
+
+    if (!pincode) {
+      errors.push(data.authErrors.invalidPincode);
+    }
+
+    if (errors.length > 0) throw errors;
+
+    const userName =
+      name.replace(/\s+/g, '') +
+      pincode +
+      chars[Math.floor(Math.random() * 26)] +
+      Math.random().toString(36).substring(2, 8);
+
+    const email =
+      chars[Math.floor(Math.random() * 26)] +
+      Math.random().toString(36).substring(2, 11) +
+      '@customer.com';
+
+    const password =
+      chars[Math.floor(Math.random() * 26)] +
+      Math.random().toString(36).substring(2, 11);
+
+    const uType = data.types.customer;
+
+    userAuthModel.create(
+      {
+        userName,
+        name,
+        email,
+        uType,
+        password: await bcrypt.hash(password, 10),
+        verified: false,
+        status: data.status.created,
+      },
+      (err, custCreate) => {
+        if (err) throw err;
+        const token = jwt.sign(
+          {
+            id: custCreate._id,
+            userName: custCreate.userName,
+            name: custCreate.name,
+            type: custCreate.uType,
+            verified: custCreate.verified,
+            status: custCreate.status,
+            registerTime: custCreate.createdAt,
+          },
+          process.env.SECRET,
+          {
+            expiresIn: process.env.TOKEN_EXP,
+          }
+        );
+
+        const options = {
+          expires: new Date(
+            Date.now() + process.env.COOKIE_EXP * 24 * 60 * 60 * 1000
+          ),
+        };
+
+        res.status(201).cookie('authToken', token, options).json({
+          success: true,
+          message: data.authSuccess.custAdded,
+          token,
+        });
+      }
+    );
   } catch (err) {
     res.status(400).json({
       error: {

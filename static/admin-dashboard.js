@@ -7,7 +7,8 @@ let adminChatAgents,
   adminPresetList,
   adminPresetForm,
   adminAgentList,
-  adminAgentForm;
+  adminAgentForm,
+  adminSettings;
 let currentAgent,
   currentAgentName,
   currentChat,
@@ -15,6 +16,7 @@ let currentAgent,
   presetFetched,
   currentPreset,
   currentTab,
+  settingsFetched,
   usersFetched;
 
 class AdminDashboard {
@@ -37,6 +39,28 @@ class AdminDashboard {
       body,
     });
     return await response.json();
+  }
+
+  listSettings() {
+    try {
+      const settingsList = this._fetchApi('/list-settings', this._post);
+
+      settingsList
+        .then((json) => {
+          if (json.success && json.detail.count > 0) {
+            if (!settingsFetched) {
+              settingsFetched = true;
+            }
+            adminSettings.innerHTML = json.detail;
+          } else throw json;
+        })
+        .catch((err) => {
+          // console.log(err);
+        });
+    }
+    catch (err) {
+      console.log(error);
+    }
   }
 
   listAllAgents(verifyStatus, sourceAction) {
@@ -68,6 +92,9 @@ class AdminDashboard {
         .then((json) => {
           affectedSection.innerHTML = '';
           if (json.success && json.detail.count > 0) {
+            if (!usersFetched) {
+              usersFetched = true;
+            }
             for (let agent in json.detail.listAgents) {
               agent = parseInt(agent);
               if (agent === 0) {
@@ -484,6 +511,7 @@ class AdminDashboard {
   adminPresetForm = document.getElementById('presetUpdateForm');
   adminAgentList = document.getElementById('agentsList');
   adminAgentForm = document.getElementById('agentUpdateForm');
+  adminSettings = document.getElementById('settingsList');
   currentTab = document
     .querySelectorAll('a.page-tab')[0]
     .getAttribute('data-id');
@@ -541,8 +569,12 @@ function changeTab(e) {
         break;
       case 'userMaster':
         if (!usersFetched) {
-          usersFetched = true;
           admin.listAllAgents('new', getUserDetails);
+        }
+        break;
+      case 'adminMaster':
+        if (!settingsFetched) {
+          admin.listSettings();
         }
         break;
       case 'chatMaster':

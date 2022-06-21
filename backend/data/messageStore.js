@@ -1,4 +1,11 @@
 module.exports = Object.freeze({
+  admin: {
+    holiday: 'holiday_mode',
+    weekend: 'weekend_mode',
+    boolean: 'boolean',
+    found: 'found'
+  },
+
   types: {
     admin: 'admin',
     agent: 'agent',
@@ -26,6 +33,7 @@ module.exports = Object.freeze({
     ratingMissing: 'rating_missing',
     ratingFailed: 'rating_failed',
     foundChats: 'chat_found',
+    notFound: 'chat_not_found',
   },
 
   resolution: {

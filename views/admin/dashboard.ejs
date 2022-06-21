@@ -21,17 +21,23 @@
         <p class="alert alert-info d-none" id="logoutFail">Some error occurred. Redirecting to login page...</p>
         <ul class="nav nav-tabs">
           <li class="nav-item">
-            <a class="nav-link page-tab text-dark active" aria-current="page" id="chatMasterTab" data-id="chatMaster" href="#chatMaster">Chat History</a>
+            <a class="nav-link page-tab text-dark" aria-current="page" id="adminMasterTab" data-id="adminMaster" href="#adminMaster"><i class="bi bi-gear-fill"></i> Global Settings</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link page-tab text-white" data-id="presetMaster" id="presetMasterTab" href="#presetMaster">Manage Presets</a>
+            <a class="nav-link page-tab text-dark active" aria-current="page" id="chatMasterTab" data-id="chatMaster" href="#chatMaster"><i class="bi bi-chat-left-dots-fill"></i> Chat History</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link page-tab text-white" data-id="userMaster" id="userMasterTab" href="#userMaster">Manage Agents</a>
+            <a class="nav-link page-tab text-white" data-id="presetMaster" id="presetMasterTab" href="#presetMaster"><i class="bi bi-chat-left-text-fill"></i> Manage Presets</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link page-tab text-white" data-id="userMaster" id="userMasterTab" href="#userMaster"><i class="bi bi-person-badge-fill"></i> Manage Agents</a>
           </li>
         </ul>
       </div>
       <div class="w-100 bg-light rounded">
+        <div class="tab-data d-none ps-2 pe-2" id="adminMaster">
+          <%- include('admin') %>
+        </div>
         <div class="tab-data current w-100 ps-2 pe-2" id="chatMaster">
           <%- include('chats') %>
         </div>

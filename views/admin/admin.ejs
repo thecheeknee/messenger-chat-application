@@ -1,0 +1,46 @@
+<div class="row">
+  <div class="col-md-4 col-sm-6">
+    <p class="lead pt-3 ps-4">Settings List</p>
+    <div class="list-group" id="settingsList"></div>
+  </div>
+  <div class="col-md-8 col-sm-6">
+    <p class="lead pt-3 ps-4">Update Setting <button class="float-end btn btn-primary" id="newSetting">New Setting</button></p>
+    <div class="w-100 p-3">
+      <form class="needs-validation" id="settingUpdateForm" name="settingUpdateForm" action="javascript:void(0);">
+        <div class="alert alert-danger d-none" id="settingError">
+          <strong class="alert-heading">Update Error!</strong>
+          <p></p>
+        </div>
+        <p class="alert alert-success d-none" id="settingSuccess">Settings Successfully Saved!</p>
+        <input type="hidden" class="form-control" id="settingId" aria-describedby="settingId">
+        <div class="row">
+          <div class="col mb-3">
+            <label for="settingName" class="form-label">Setting Name</label>
+            <input type="text" class="form-control" id="settingName" aria-describedby="settingNameHelp" required>
+            <div id="settingNameHelp" class="form-text">A short name to identify your setting</div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="settingDescription" class="form-label">Setting Description</label>
+          <textarea class="form-control" id="settingDescription" aria-describedby="settingDescriptionHelp" required></textarea>
+          <div id="settingDescriptionHelp" class="form-text">Description of what this setting property does. Please reach out to the developer to implement this setting into your application</div>
+        </div>
+        <div class="mb-3">
+          <label for="settingValue" class="form-label">Setting Message</label>
+          <textarea class="form-control" id="settingValue" aria-describedby="settingValueHelp" required></textarea>
+          <div id="settingValueHelp" class="form-text">Message to be displayed to the user if this setting is activated/deactivated</div>
+        </div>
+        <hr />
+        <div class="mb-3">
+          <div class="row">
+            <div class="col text-end">
+              <button class="btn btn-success" type="submit" id="saveSetting">
+                <i class="bi bi-gear-fill"></i> Save Setting
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

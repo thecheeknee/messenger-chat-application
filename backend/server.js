@@ -44,6 +44,7 @@ const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const presetRoute = require('./routes/presetRoute');
 const messengerRoute = require('./routes/messengerRoute');
+const adminRoute = require('./routes/adminRoute');
 const { userFetchEmail } = require('./controller/authController');
 const {
   authChatCheck,
@@ -62,6 +63,7 @@ app.use('/api/messenger', authRoute);
 app.use('/api/messenger', chatRoute);
 app.use('/api/messenger', presetRoute);
 app.use('/api/messenger', messengerRoute);
+app.use('/api/messenger', adminRoute);
 app.use(express.static('static'));
 
 const PORT = process.env.PORT || 5000;
